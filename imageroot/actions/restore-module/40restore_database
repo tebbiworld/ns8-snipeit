@@ -1,0 +1,46 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Load the dump of the backup (state/snipeit.sql) into a new database
+# volume: a throwaway MariaDB container initialises the volume with the
+# restored passwords and runs the dump through its initdb mechanism.
+
+set -e -o pipefail
+exec 1>&2
+
+if [[ ! -f snipeit.sql ]]; then
+    echo "No database dump in the backup: the instance starts with an empty database"
+    exit 0
+fi
+
+mkdir -vp initdb.d
+mv -v snipeit.sql initdb.d/10snipeit.sql
+# The entrypoint sources *.sh: stop the temporary server after the dump and
+# end the container instead of starting the real server
+cat >initdb.d/zz_stop.sh <<'EOS'
+set -- true
+docker_temp_server_stop
+exit 0
+EOS
+trap 'rm -rfv initdb.d/' EXIT
+# the dump is private to the module user (bin/module-dump-state); the
+# entrypoint reads it as the mysql user of the container, a sub-UID. The
+# directory stays private: ~ is not accessible to other users.
+chmod -R a+rX initdb.d
+
+podman volume rm --force mysql-data
+# the passwords come from the restored state/passwords.env, by file
+podman run \
+    --rm \
+    --interactive \
+    --network=none \
+    --env-file=passwords.env \
+    --env MARIADB_DATABASE=snipeit \
+    --env MARIADB_USER=snipeit \
+    --volume=./initdb.d:/docker-entrypoint-initdb.d:z \
+    --volume mysql-data:/var/lib/mysql:Z \
+    "${MARIADB_IMAGE}"

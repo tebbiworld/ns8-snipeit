@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Runs before the backup, in state/: dump the database. The raw mysql-data
+# volume is not backed up (etc/state-include.conf), restore-module loads this
+# dump into a new volume (actions/restore-module/40restore_database).
+
+set -e
+# the dump holds password hashes and sessions: private to the module user
+umask 077
+
+if ! systemctl --user -q is-active snipeit-mariadb.service; then
+    exit 0
+fi
+
+# MYSQL_PWD instead of -p: the password stays off the command line
+podman exec snipeit-mariadb /bin/sh -c 'MYSQL_PWD="$MARIADB_PASSWORD" exec mariadb-dump \
+        -u "$MARIADB_USER" \
+        --default-character-set=utf8mb4 \
+        --skip-dump-date \
+        --single-transaction \
+        --quick \
+        --no-tablespaces \
+        --add-drop-table \
+        "$MARIADB_DATABASE"' > snipeit.sql.tmp
+mv -f snipeit.sql.tmp snipeit.sql
