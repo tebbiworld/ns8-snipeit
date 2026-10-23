@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Return the settings configure-module accepts. The application key, the
+# database passwords and the LDAP bind password are kept in
+# state/passwords.env and never returned.
+
+import json
+import os
+import sys
+
+import ldapsettings
+
+config = {
+    "host": os.getenv("TRAEFIK_HOST", ""),
+    "lets_encrypt": os.getenv("TRAEFIK_LETS_ENCRYPT") == "True",
+    "http2https": os.getenv("TRAEFIK_HTTP2HTTPS", "True") == "True",
+    # false also when the super user disappeared: the UI asks for a new one
+    "installed": os.getenv("SNIPEIT_INSTALLED") == "1" and os.getenv("SNIPEIT_SETUP_MISSING") != "1",
+    "mail_from": os.getenv("MAIL_FROM", ""),
+    "ldap_enabled": os.getenv("LDAP_ENABLED") == "true",
+    # Snipe-IT uses the directory login: false while it is on but could not
+    # be prepared (see the journal of snipeit-app)
+    "ldap_active": os.getenv("LDAP_ACTIVE") == "true",
+}
+config.update(ldapsettings.configuration())
+json.dump(config, fp=sys.stdout)

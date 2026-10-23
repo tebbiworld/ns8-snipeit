@@ -1,0 +1,40 @@
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+[Unit]
+Description=Snipe-IT database (MariaDB)
+BindsTo=snipeit.service
+After=snipeit.service
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=%S/state/environment
+# MARIADB_ROOT_PASSWORD, MARIADB_PASSWORD: passed by name (--env NAME), so
+# the values never appear on a command line
+EnvironmentFile=%S/state/passwords.env
+Restart=always
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/snipeit-mariadb.pid %t/snipeit-mariadb.ctr-id
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/snipeit-mariadb.pid \
+    --cidfile %t/snipeit-mariadb.ctr-id --cgroups=no-conmon \
+    --pod-id-file %t/snipeit.pod-id --replace -d --name snipeit-mariadb \
+    --env MARIADB_DATABASE=snipeit \
+    --env MARIADB_USER=snipeit \
+    --env MARIADB_PASSWORD \
+    --env MARIADB_ROOT_PASSWORD \
+    --env MARIADB_AUTO_UPGRADE=1 \
+    --env MARIADB_DISABLE_UPGRADE_BACKUP=1 \
+    --volume mysql-data:/var/lib/mysql:Z \
+    ${MARIADB_IMAGE} \
+    --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+ExecStartPost=/usr/bin/podman exec snipeit-mariadb /bin/sh -c 'while ! healthcheck.sh --connect >/dev/null 2>&1; do sleep 1; done'
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/snipeit-mariadb.ctr-id -t 10
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/snipeit-mariadb.ctr-id
+SyslogIdentifier=%u
+PIDFile=%t/snipeit-mariadb.pid
+Type=forking
+
+[Install]
+WantedBy=default.target

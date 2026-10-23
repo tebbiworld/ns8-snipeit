@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Store the settings. The bind password of an LDAP server of its own goes to
+# state/passwords.env (pypkg/ldapsettings.py) and is removed with the
+# directory login; the administrator password is
+# not stored at all (85setup passes it to Snipe-IT).
+
+import json
+import os
+import sys
+
+import agent
+import ldapsettings
+import modsecrets
+
+data = json.load(sys.stdin)
+
+agent.set_env("TRAEFIK_HOST", data["host"])
+agent.set_env("TRAEFIK_LETS_ENCRYPT", data["lets_encrypt"])
+agent.set_env("TRAEFIK_HTTP2HTTPS", data["http2https"])
+if "mail_from" in data:
+    agent.set_env("MAIL_FROM", (data["mail_from"] or "").strip())
+
+ldap_enabled = data.get("ldap_enabled", os.environ.get("LDAP_ENABLED") == "true")
+agent.set_env("LDAP_ENABLED", "true" if ldap_enabled else "false")
+if any(key.startswith("ldap_") and key != "ldap_enabled" for key in data):
+    ldapsettings.apply(data, active=ldap_enabled)
+else:
+    # a request without directory fields (e.g. only the host) keeps them
+    ldapsettings.bind_domain(ldap_enabled)
+if not ldap_enabled and modsecrets.get(ldapsettings.PASSWORD_KEY):
+    # no directory login, no stored credentials (they would stay in the
+    # backup): enabling it again asks for the bind password
+    modsecrets.write({ldapsettings.PASSWORD_KEY: ""})

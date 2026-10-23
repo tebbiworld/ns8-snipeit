@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Remove the Traefik route of the instance.
+
+import os
+import sys
+
+import agent
+import agent.tasks
+
+traefik_id = agent.resolve_agent_id("traefik@node")
+if traefik_id is None:
+    print(agent.SD_ERR + "no Traefik instance on this node", file=sys.stderr)
+    sys.exit(2)
+
+response = agent.tasks.run(
+    agent_id=traefik_id,
+    action="delete-route",
+    data={"instance": os.environ["MODULE_ID"]},
+)
+agent.assert_exp(response["exit_code"] == 0, "the Traefik route was not removed")

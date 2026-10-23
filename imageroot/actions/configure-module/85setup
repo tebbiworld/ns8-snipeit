@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# First configuration: create the first super user and the settings, which
+# closes the Snipe-IT web installer. The Traefik route is created after this
+# step (90route), so the installer is never reachable from the network.
+# The password goes to the container on stdin and is not stored.
+
+import json
+import os
+import subprocess
+import sys
+
+import agent
+
+HELPER = "/usr/local/lib/ns8/ns8-snipeit.php"
+
+data = json.load(sys.stdin)
+login = (data.get("admin_user") or "").strip()
+needs_setup = os.environ.get("SNIPEIT_INSTALLED") != "1" or os.environ.get("SNIPEIT_SETUP_MISSING") == "1"
+if not needs_setup or not login:
+    sys.exit(0)
+
+admin = {
+    "username": login,
+    "first_name": login,
+    "last_name": "",
+    "email": data["admin_email"].strip(),
+    "password": data["admin_password"],
+    "site_name": (data.get("site_name") or "").strip(),
+}
+proc = subprocess.run(["podman", "exec", "-i", "-u", "docker", "snipeit-app", "php", HELPER, "install"],
+                      input=json.dumps(admin), capture_output=True, text=True)
+if proc.returncode != 0:
+    print(agent.SD_ERR + "the first super user was not created: " + proc.stderr.strip(), file=sys.stderr)
+    sys.exit(1)
+print(proc.stdout.strip(), file=sys.stderr)
+
+# record the installation and store the directory login, as at every start
+agent.run_helper("snipeit-sync").check_returncode()

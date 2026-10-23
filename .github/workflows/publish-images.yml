@@ -1,0 +1,57 @@
+name: "Publish images"
+
+# Same behaviour as NethServer/ns8-github-actions publish-branch.yml: build with
+# build-images.sh, push <image>:<branch-or-tag>, and :latest for main and release
+# tags. The registry login uses the repository GITHUB_TOKEN: a package created
+# that way is public like the repository and linked to it (a package created
+# with a personal token stays private).
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  publish_images:
+    name: "Publish module images"
+    runs-on: ubuntu-latest
+    env:
+      REPOBASE: ghcr.io/${{ github.repository_owner }}
+      IMAGETAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ui/node_modules
+          key: "yarn-${{ hashFiles('ui/yarn.lock') }}"
+      - id: build
+        run: |
+          REPOBASE=${REPOBASE,,}
+          export REPOBASE
+          IMAGETAG=$(printf '%s' "${IMAGETAG}" | tr '/' '-')
+          export IMAGETAG
+          echo "IMAGETAG=${IMAGETAG}" >> "$GITHUB_ENV"
+          bash build-images.sh
+      - id: publish
+        run: |
+          trap 'buildah logout ghcr.io' EXIT
+          buildah login -u "${{ github.actor }}" --password-stdin ghcr.io <<<"${{ secrets.GITHUB_TOKEN }}"
+          images=(${{ steps.build.outputs.images }})
+          urls=""
+          for image in "${images[@]}" ; do
+            # runtime images built by build-images.sh may carry the tag already
+            src="${image}"; buildah inspect "${image}:${IMAGETAG}" >/dev/null 2>&1 && src="${image}:${IMAGETAG}"
+            buildah push "${src}" "docker://${image}:${IMAGETAG}"
+            if [[ "${IMAGETAG}" == "main" || "${GITHUB_REF_TYPE}" == "tag" ]]; then
+                buildah push "${src}" "docker://${image}:latest"
+            fi
+            urls="${image}:${IMAGETAG} "$'\n'"${urls}"
+          done
+          echo "::notice title=Image URLs::${urls}"

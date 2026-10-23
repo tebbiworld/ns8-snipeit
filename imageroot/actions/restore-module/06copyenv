@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Copy the settings of the original instance. Secrets are not part of the
+# environment: state/passwords.env comes back with the backup.
+
+import json
+import sys
+
+import agent
+
+request = json.load(sys.stdin)
+
+if "environment" in request:
+    # restore-module: the environment of the backup comes with the request
+    original_environment = request["environment"]
+else:
+    # clone-module (this file is linked there as 20copyenv): the core imports
+    # only the variables the new instance does not have yet and leaves the
+    # source environment in state/environment.clone-module
+    original_environment = agent.read_envfile("environment.clone-module")
+
+KEEP = [
+    "TRAEFIK_HOST",
+    "TRAEFIK_HTTP2HTTPS",
+    "TRAEFIK_LETS_ENCRYPT",
+    "SNIPEIT_TIMEZONE",
+    "SNIPEIT_INSTALLED",
+    "MAIL_FROM",
+    "LDAP_ENABLED",
+    "LDAP_SOURCE",
+    "LDAP_DOMAIN",
+    "LDAP_GROUP",
+    "LDAP_URL",
+    "LDAP_START_TLS",
+    "LDAP_TLS_VERIFY",
+    "LDAP_SCHEMA",
+    "LDAP_BASE_DN",
+    "LDAP_BIND_DN",
+    "LDAP_USER_ATTRIBUTE",
+]
+agent.mset_env({key: original_environment[key] for key in KEEP if key in original_environment})

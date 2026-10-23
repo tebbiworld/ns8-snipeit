@@ -1,0 +1,24 @@
+{
+  "name": "Snipe-IT",
+  "description": {
+    "en": "IT asset management: hardware, software licenses, accessories and consumables, who has what, check-out/check-in, audits and maintenances. Login with a user domain of the cluster.",
+    "de": "IT-Inventarverwaltung: Hardware, Softwarelizenzen, Zubehör und Verbrauchsmaterial, wer hat was, Ausgabe/Rücknahme, Inventuren und Wartungen. Anmeldung mit einer Benutzerdomäne des Clusters."
+  },
+  "categories": [
+    "system_administration",
+    "office"
+  ],
+  "authors": [
+    {
+      "name": "tebbi",
+      "email": "214554644+tebbiworld@users.noreply.github.com"
+    }
+  ],
+  "docs": {
+    "documentation_url": "https://snipe-it.readme.io/docs",
+    "bug_url": "https://github.com/tebbiworld/ns8-snipeit/issues",
+    "code_url": "https://github.com/tebbiworld/ns8-snipeit",
+    "relnotes_url": "https://github.com/tebbiworld/ns8-snipeit/releases"
+  },
+  "source": "ghcr.io/tebbiworld/snipeit"
+}

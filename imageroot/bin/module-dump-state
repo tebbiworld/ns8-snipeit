@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Runs before the backup, in state/: dump the database. The raw mysql-data
+# volume is not backed up (etc/state-include.conf), restore-module loads this
+# dump into a new volume (actions/restore-module/40restore_database).
+
+set -e
+# the dump holds password hashes and sessions: private to the module user
+umask 077
+
+# Not installed yet (no super user ever created): no data to save.
+# Read the state file: it is the module setting, whatever the caller exported.
+if ! grep -qx 'SNIPEIT_INSTALLED=1' environment; then
+    exit 0
+fi
+# An installed instance whose database is not running (stopped, disabled)
+# cannot be saved: fail the backup instead of reporting success for one
+# without the database
+if ! systemctl --user -q is-active snipeit-mariadb.service; then
+    echo "module-dump-state: snipeit-mariadb.service is not running, the database of the installed instance cannot be saved" >&2
+    exit 1
+fi
+
+# MYSQL_PWD instead of -p: the password stays off the command line
+podman exec snipeit-mariadb /bin/sh -c 'MYSQL_PWD="$MARIADB_PASSWORD" exec mariadb-dump \
+        -u "$MARIADB_USER" \
+        --default-character-set=utf8mb4 \
+        --skip-dump-date \
+        --single-transaction \
+        --quick \
+        --no-tablespaces \
+        --add-drop-table \
+        "$MARIADB_DATABASE"' > snipeit.sql.tmp
+# mariadb-dump ends a complete dump with this line
+if ! tail -n 1 snipeit.sql.tmp | grep -q '^-- Dump completed'; then
+    rm -f snipeit.sql.tmp
+    echo "module-dump-state: the database dump is incomplete" >&2
+    exit 1
+fi
+mv -f snipeit.sql.tmp snipeit.sql
