@@ -198,8 +198,9 @@ function ldap(array $data): never
         $settings->ldap_filter = required_string($data, 'filter');
         $settings->ldap_username_field = required_string($data, 'username_field');
         $settings->ldap_auth_filter_query = required_string($data, 'auth_filter_query');
-        $settings->ldap_fname_field = (string) ($data['first_name_field'] ?? 'givenname');
+        $settings->ldap_fname_field = required_string($data, 'first_name_field');
         $settings->ldap_lname_field = (string) ($data['last_name_field'] ?? 'sn');
+        $settings->ldap_display_name = (string) ($data['display_name_field'] ?? 'displayname');
         $settings->ldap_email = (string) ($data['email_field'] ?? 'mail');
         $settings->ldap_version = 3;
         $settings->is_ad = empty($data['is_ad']) ? 0 : 1;

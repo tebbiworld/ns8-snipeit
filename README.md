@@ -85,6 +85,12 @@ api-cli run module/snipeit1/configure-module --data '{
 }'
 ```
 
+Directory attributes: login name `sAMAccountName` (AD) or `uid`, mail
+`mail`, display name `displayName`, last name `sn`. The first name of
+Snipe-IT is the login name: Snipe-IT requires one and maps a single
+attribute per field, and NS8 creates users without `givenName`. Users show
+up with their display name, or with the login name when it is empty.
+
 A directory user is created in Snipe-IT on the first login (or by the daily
 import, `snipeit-ldap-sync.timer`) **without permissions**: a super user
 grants them in Snipe-IT, per user or with a permission group. Local accounts,
