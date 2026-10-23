@@ -13,8 +13,16 @@ set -e
 # the dump holds password hashes and sessions: private to the module user
 umask 077
 
-if ! systemctl --user -q is-active snipeit-mariadb.service; then
+# Never configured: no database to save
+if ! systemctl --user -q is-enabled snipeit.service; then
     exit 0
+fi
+# A configured instance whose database is not running cannot be saved: fail
+# the backup instead of storing one without the database (a restore of such
+# a backup would start Snipe-IT with an empty database)
+if ! systemctl --user -q is-active snipeit-mariadb.service; then
+    echo "module-dump-state: snipeit-mariadb.service is not running, the database cannot be saved" >&2
+    exit 1
 fi
 
 # MYSQL_PWD instead of -p: the password stays off the command line
@@ -27,4 +35,10 @@ podman exec snipeit-mariadb /bin/sh -c 'MYSQL_PWD="$MARIADB_PASSWORD" exec maria
         --no-tablespaces \
         --add-drop-table \
         "$MARIADB_DATABASE"' > snipeit.sql.tmp
+# mariadb-dump ends a complete dump with this line
+if ! tail -n 1 snipeit.sql.tmp | grep -q '^-- Dump completed'; then
+    rm -f snipeit.sql.tmp
+    echo "module-dump-state: the database dump is incomplete" >&2
+    exit 1
+fi
 mv -f snipeit.sql.tmp snipeit.sql

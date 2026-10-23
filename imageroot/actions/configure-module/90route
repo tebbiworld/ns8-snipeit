@@ -5,14 +5,18 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-# Publish Snipe-IT through the Traefik instance of the node.
+# Publish Snipe-IT through the Traefik instance of the node, only when its
+# setup is completed.
 
 import json
 import os
+import subprocess
 import sys
 
 import agent
 import agent.tasks
+
+HELPER = "/usr/local/lib/ns8/ns8-snipeit.php"
 
 data = json.load(sys.stdin)
 
@@ -20,6 +24,26 @@ traefik_id = agent.resolve_agent_id("traefik@node")
 if traefik_id is None:
     print(agent.SD_ERR + "no Traefik instance on this node", file=sys.stderr)
     sys.exit(2)
+
+
+def setup_completed():
+    """Snipe-IT has its super user and settings (the web installer is closed)."""
+    proc = subprocess.run(["podman", "exec", "-i", "-u", "docker", "snipeit-app", "php", HELPER, "status"],
+                          stdin=subprocess.DEVNULL, capture_output=True, text=True)
+    if proc.returncode != 0:
+        print(agent.SD_ERR + "cannot read the Snipe-IT status: " + proc.stderr.strip(), file=sys.stderr)
+        return False
+    return json.loads(proc.stdout).get("setup_completed") is True
+
+
+# Fail closed: without a super user the web installer would be public, e.g.
+# after a restore with an empty database. No route then, and an existing one
+# is removed.
+if not setup_completed():
+    agent.tasks.run(agent_id=traefik_id, action="delete-route", data={"instance": os.environ["MODULE_ID"]})
+    print(agent.SD_ERR + "Snipe-IT has no super user: the web installer would be public, the route is not published",
+          file=sys.stderr)
+    sys.exit(1)
 
 response = agent.tasks.run(
     agent_id=traefik_id,

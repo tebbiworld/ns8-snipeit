@@ -13,7 +13,13 @@ set -e -o pipefail
 exec 1>&2
 
 if [[ ! -f snipeit.sql ]]; then
-    echo "No database dump in the backup: the instance starts with an empty database"
+    if [[ "${SNIPEIT_INSTALLED}" == "1" ]]; then
+        # an installed instance without its database would start the open
+        # Snipe-IT web installer: refuse
+        echo "The backup has no database dump although Snipe-IT was installed: restore aborted"
+        exit 1
+    fi
+    echo "No database dump in the backup (Snipe-IT was not installed yet)"
     exit 0
 fi
 
