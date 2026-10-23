@@ -6,7 +6,8 @@
 #
 
 # Store the settings. The bind password of an LDAP server of its own goes to
-# state/passwords.env (pypkg/ldapsettings.py); the administrator password is
+# state/passwords.env (pypkg/ldapsettings.py) and is removed with the
+# directory login; the administrator password is
 # not stored at all (85setup passes it to Snipe-IT).
 
 import json
@@ -15,6 +16,7 @@ import sys
 
 import agent
 import ldapsettings
+import modsecrets
 
 data = json.load(sys.stdin)
 
@@ -31,3 +33,7 @@ if any(key.startswith("ldap_") and key != "ldap_enabled" for key in data):
 else:
     # a request without directory fields (e.g. only the host) keeps them
     ldapsettings.bind_domain(ldap_enabled)
+if not ldap_enabled:
+    # no directory login, no stored credentials (they would stay in the
+    # backup): enabling it again asks for the bind password
+    modsecrets.write({ldapsettings.PASSWORD_KEY: ""})
