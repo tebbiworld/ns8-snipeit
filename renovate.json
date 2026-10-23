@@ -4,20 +4,42 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Matomo release vendored in matomo/Containerfile",
-      "fileMatch": ["^matomo/Containerfile$"],
-      "matchStrings": ["ENV MATOMO_VERSION (?<currentValue>\\d+\\.\\d+\\.\\d+)"],
-      "depNameTemplate": "matomo-org/matomo",
-      "datasourceTemplate": "github-releases"
+      "description": "Runtime images pinned by tag and digest in build-images.sh",
+      "managerFilePatterns": ["/^build-images\\.sh$/"],
+      "matchStrings": [
+        "\"(?<depName>docker\\.io/[a-z0-9._/-]+):(?<currentValue>[A-Za-z0-9._-]+)@(?<currentDigest>sha256:[0-9a-f]{64})\""
+      ],
+      "datasourceTemplate": "docker"
     },
     {
       "customType": "regex",
-      "description": "LoginLdap plugin bundled in matomo/Containerfile (its checksum must be updated too)",
-      "fileMatch": ["^matomo/Containerfile$"],
-      "matchStrings": ["ENV LOGINLDAP_VERSION (?<currentValue>\\d+\\.\\d+\\.\\d+)"],
-      "depNameTemplate": "matomo-org/plugin-LoginLdap",
-      "datasourceTemplate": "github-tags",
-      "allowedVersions": "<6"
+      "description": "Node.js image that builds the UI in build-images.sh",
+      "managerFilePatterns": ["/^build-images\\.sh$/"],
+      "matchStrings": [
+        "(?<depName>docker\\.io/library/node):(?<currentValue>\\d+\\.\\d+\\.\\d+-slim)"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Snipe-IT: the CI checks the PHP package of a new image (PHP2Shell); also released by auto-release.yml",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["docker.io/snipe/snipe-it"],
+      "automerge": false
+    },
+    {
+      "description": "MariaDB: stay on the 11.4 LTS line",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["docker.io/library/mariadb"],
+      "allowedVersions": "/^11\\.4\\.\\d+$/",
+      "automerge": false
+    },
+    {
+      "description": "Node.js: stay on the 24 LTS line for the UI build",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["docker.io/library/node"],
+      "allowedVersions": "/^24\\.\\d+\\.\\d+-slim$/"
     }
   ]
 }
