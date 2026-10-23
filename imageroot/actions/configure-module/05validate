@@ -23,7 +23,10 @@ agent.set_weight(os.path.basename(__file__), 0)
 USERNAME = re.compile(r"[A-Za-z0-9_.@-]{2,100}")
 EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 MIN_PASSWORD_LENGTH = 12
-CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
+# C0, DEL, C1 and the Unicode line/paragraph separators
+CONTROL_CHARACTERS = re.compile("[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+# sender address of mails: plain ASCII, it goes into a mail header
+MAIL_ADDRESS = re.compile(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+")
 
 data = json.load(sys.stdin)
 errors = []
@@ -56,7 +59,7 @@ if login:
     if not EMAIL.fullmatch((data.get("admin_email") or "").strip()):
         fail("admin_email", data.get("admin_email", ""), "admin_email_invalid")
 mail_from = (data.get("mail_from") or "").strip()
-if mail_from and not EMAIL.fullmatch(mail_from):
+if mail_from and not MAIL_ADDRESS.fullmatch(mail_from):
     fail("mail_from", mail_from, "mail_from_invalid")
 
 ldap_enabled = data.get("ldap_enabled", os.environ.get("LDAP_ENABLED") == "true")

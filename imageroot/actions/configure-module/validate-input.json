@@ -51,7 +51,7 @@
             "type": "string",
             "maxLength": 100,
             "description": "First Snipe-IT super user, created by the first configuration only",
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "admin_password": {
             "type": "string",
@@ -62,19 +62,19 @@
             "type": "string",
             "maxLength": 254,
             "description": "Mail address of the super user, also the alert address",
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "site_name": {
             "type": "string",
             "maxLength": 100,
             "description": "Name of the installation shown by Snipe-IT (first configuration only)",
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "mail_from": {
             "type": "string",
             "maxLength": 254,
             "description": "Sender address of Snipe-IT mails; empty: snipeit@<host>",
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "ldap_enabled": {
             "type": "boolean",
@@ -90,18 +90,18 @@
         "ldap_domain": {
             "type": "string",
             "maxLength": 253,
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "ldap_group": {
             "type": "string",
             "maxLength": 512,
             "description": "Only members of this group may log in (Active Directory)",
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "ldap_url": {
             "type": "string",
             "maxLength": 512,
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "ldap_start_tls": {
             "type": "boolean"
@@ -119,12 +119,12 @@
         "ldap_base_dn": {
             "type": "string",
             "maxLength": 512,
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "ldap_bind_dn": {
             "type": "string",
             "maxLength": 512,
-            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
         },
         "ldap_bind_password": {
             "type": "string",
