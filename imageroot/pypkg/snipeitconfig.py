@@ -137,8 +137,10 @@ def group_dn(conn):
     # ldap3 checks no certificate unless told to: follow the TLS check setting
     # of the directory (the bind password is sent on this connection)
     tls = ldap3.Tls(validate=ssl.CERT_REQUIRED if conn["tls_verify"] else ssl.CERT_NONE)
+    # get_info=NONE: by default ldap3 reads the schema right after StartTLS,
+    # before the bind, which Active Directory refuses without authentication
     server = ldap3.Server(conn["host"], port=conn["port"], use_ssl=conn["tls"] == "ssl", tls=tls,
-                          connect_timeout=5)
+                          get_info=ldap3.NONE, connect_timeout=5)
     ldapconn = ldap3.Connection(server, user=conn["bind_dn"], password=conn["bind_password"],
                                 receive_timeout=10, raise_exceptions=True)
     if conn["tls"] == "starttls":
