@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Defaults of a new instance; configure-module applies the real settings.
+
+from pathlib import Path
+
+import agent
+
+# The node time zone is the default time zone of Snipe-IT
+try:
+    timezone = str(Path("/etc/localtime").resolve().relative_to(Path("/usr/share/zoneinfo")))
+except ValueError:
+    timezone = "UTC"
+
+agent.set_env("SNIPEIT_TIMEZONE", timezone)
+agent.set_env("SNIPEIT_INSTALLED", "0")
+agent.set_env("MAIL_FROM", "")
+agent.set_env("LDAP_ENABLED", "false")

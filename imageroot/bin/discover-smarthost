@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# ExecStartPre of snipeit-app.service: copy the cluster smarthost settings to
+# state/smarthost.env (mode 0600: it holds the SMTP password). The event
+# smarthost-changed restarts the app, so a new setting is read again.
+
+import os
+
+import agent
+
+# The local Redis replica: the service starts even when the leader node is
+# not reachable
+rdb = agent.redis_connect(use_replica=True)
+smtp = agent.get_smarthost_settings(rdb)
+
+envfile = "smarthost.env"
+old_umask = os.umask(0o077)
+try:
+    # write a temporary file first: the old one stays complete until replaced
+    with open(envfile + ".tmp", "w") as efp:
+        print(f"SMTP_ENABLED={'1' if smtp['enabled'] else ''}", file=efp)
+        print(f"SMTP_HOST={smtp['host']}", file=efp)
+        print(f"SMTP_PORT={smtp['port']}", file=efp)
+        print(f"SMTP_USERNAME={smtp['username']}", file=efp)
+        print(f"SMTP_PASSWORD={smtp['password']}", file=efp)
+        print(f"SMTP_ENCRYPTION={smtp['encrypt_smtp']}", file=efp)
+        print(f"SMTP_TLSVERIFY={'1' if smtp['tls_verify'] else ''}", file=efp)
+    os.chmod(envfile + ".tmp", 0o600)
+    os.replace(envfile + ".tmp", envfile)
+finally:
+    os.umask(old_umask)

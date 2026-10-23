@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Restart a configured instance on the new images: the Snipe-IT entrypoint
+# migrates the database, snipeit-sync stores the settings again.
+
+set -e
+exec 1>&2
+
+if systemctl --user -q is-enabled snipeit.service; then
+    systemctl --user enable --now snipeit-scheduler.timer snipeit-ldap-sync.timer
+    systemctl --user try-restart snipeit.service
+fi

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# The cluster smarthost changed: restart the app, its ExecStartPre steps read
+# the new settings.
+
+set -e
+exec 1>&2
+systemctl --user try-restart snipeit-app.service

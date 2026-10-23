@@ -1,0 +1,47 @@
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# The Snipe-IT web server. At every start bin/snipeit-config writes the
+# container environment (URL, proxy, mail) to state/snipeit.env; after the
+# start bin/snipeit-sync completes the setup (API keys, directory login).
+
+[Unit]
+Description=Snipe-IT web server
+BindsTo=snipeit.service
+After=snipeit.service snipeit-mariadb.service
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=%S/state/environment
+# APP_KEY, DB_PASSWORD: passed by name (--env NAME)
+EnvironmentFile=%S/state/passwords.env
+WorkingDirectory=%S/state
+Restart=always
+TimeoutStartSec=600
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/snipeit-app.pid %t/snipeit-app.ctr-id
+ExecStartPre=-runagent discover-smarthost
+ExecStartPre=runagent snipeit-config
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/snipeit-app.pid \
+    --cidfile %t/snipeit-app.ctr-id --cgroups=no-conmon \
+    --pod-id-file %t/snipeit.pod-id --replace -d --name snipeit-app \
+    --env-file %S/state/snipeit.env \
+    --env APP_KEY \
+    --env DB_PASSWORD \
+    --volume snipeit-data:/var/lib/snipeit:Z \
+    --volume %S/container/supervisord.conf:/supervisord.conf:ro,z \
+    --volume %S/container/ns8-snipeit.php:/usr/local/lib/ns8/ns8-snipeit.php:ro,z \
+    ${SNIPE_IT_IMAGE}
+# the entrypoint migrates the database before Apache starts
+ExecStartPost=/usr/bin/bash -c "while ! /usr/bin/podman exec snipeit-app curl -sf -o /dev/null http://127.0.0.1/health ; do sleep 3 ; done"
+ExecStartPost=runagent snipeit-sync
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/snipeit-app.ctr-id -t 10
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/snipeit-app.ctr-id
+SyslogIdentifier=%u
+PIDFile=%t/snipeit-app.pid
+Type=forking
+
+[Install]
+WantedBy=default.target
