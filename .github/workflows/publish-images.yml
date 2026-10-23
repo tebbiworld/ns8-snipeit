@@ -1,9 +1,10 @@
 name: "Publish images"
 
-# Same behaviour as NethServer/ns8-github-actions publish-branch.yml (build with
+# Same behaviour as NethServer/ns8-github-actions publish-branch.yml: build with
 # build-images.sh, push <image>:<branch-or-tag>, and :latest for main and release
-# tags), but the registry login uses the GHCR_TOKEN secret: the ghcr package of
-# this module is user-owned and the repository GITHUB_TOKEN may not write to it.
+# tags. The registry login uses the repository GITHUB_TOKEN: a package created
+# that way is public like the repository and linked to it (a package created
+# with a personal token stays private).
 
 on:
   push:
@@ -11,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -40,7 +42,7 @@ jobs:
       - id: publish
         run: |
           trap 'buildah logout ghcr.io' EXIT
-          buildah login -u "${{ github.repository_owner }}" --password-stdin ghcr.io <<<"${{ secrets.GHCR_TOKEN }}"
+          buildah login -u "${{ github.actor }}" --password-stdin ghcr.io <<<"${{ secrets.GITHUB_TOKEN }}"
           images=(${{ steps.build.outputs.images }})
           urls=""
           for image in "${images[@]}" ; do
