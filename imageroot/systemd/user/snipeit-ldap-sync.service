@@ -1,0 +1,22 @@
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Import the directory users (members of the login group, if one is set)
+# into Snipe-IT, so assets can be checked out to them before their first
+# login. Runs only while the directory login is on.
+
+[Unit]
+Description=Snipe-IT directory user import
+Requisite=snipeit-app.service
+After=snipeit-app.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=%S/state/environment
+ExecCondition=/usr/bin/test "${LDAP_ENABLED}" = true
+# --summary: the table of imported users goes to the journal; without it
+# Snipe-IT 8.8 returns its result array as the exit code (always 1)
+ExecStart=/usr/bin/podman exec -u docker snipeit-app php /var/www/html/artisan snipeit:ldap-sync --summary --no-ansi --no-interaction
+SyslogIdentifier=%u
