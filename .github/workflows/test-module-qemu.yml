@@ -31,8 +31,12 @@ jobs:
       pull-requests: write
     uses: stephdl/ns8-ci-actions/.github/workflows/test-module-qemu.yml@v1
     with:
-      # tests/10__install.robot branches on $SCENARIO. "update" installs the
-      # last release first: add it once the first release exists
-      scenarios: '["install"]'
+      # tests/10__install.robot branches on $SCENARIO. "update" installs
+      # update_from first and upgrades it to the image under test. Until the
+      # first release, update-baseline is the image of the reviewed state of
+      # PR #1 (718b857); after the release drop update_from, so the newest
+      # release is the baseline.
+      scenarios: '["install","update"]'
+      update_from: update-baseline
       ui_tests_strategy: never
       debug_shell: ${{ github.event.inputs.debug_shell == 'true' }}

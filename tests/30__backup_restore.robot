@@ -39,6 +39,14 @@ The restored instance has settings, secrets and data
     ${tags} =    Run on node    curl -sSk -H 'Host: ${HOST}' -H 'Authorization: Bearer ${TOKEN}' -H 'Accept: application/json' https://127.0.0.1/api/v1/hardware | python3 -c 'import json,sys; print(" ".join(r["asset_tag"] for r in json.load(sys.stdin)["rows"]))'
     Should Be Equal As Strings    ${tags.strip()}    CI-0001
 
+Without a super user no route is published
+    # B1: an empty database would show the public web installer: the next
+    # configuration fails and removes the route
+    Run on node    runagent -m ${restored_id} bash -c 'podman exec snipeit-mariadb sh -c "MYSQL_PWD=\\"\\$MARIADB_PASSWORD\\" mariadb -u snipeit snipeit -e \\"SET FOREIGN_KEY_CHECKS=0; DELETE FROM users; DELETE FROM settings\\""'
+    Run task    module/${restored_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true}    rc_expected=1    decode_json=${FALSE}
+    ${code} =    Run on node    curl -sSk -o /dev/null -w '\%{http_code}' -H 'Host: ${HOST}' https://127.0.0.1/setup
+    Should Be Equal As Strings    ${code.strip()}    404
+
 *** Keywords ***
 API post
     [Documentation]    POST to the Snipe-IT REST API, return the id of the new object.
