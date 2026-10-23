@@ -155,6 +155,19 @@ def group_dn(conn):
         ldapconn.unbind()
 
 
+def dns_domain(base_dn):
+    """The DNS name of an Active Directory domain from its base DN:
+    "OU=Staff,DC=ad,DC=example,DC=org" -> "ad.example.org". Snipe-IT binds as
+    <login>@<ad_domain> when its search bind fails (Ldap::findAndBindUserLdap),
+    otherwise with the mail domain of the first super user."""
+    import ldap3.utils.dn
+    try:
+        parts = ldap3.utils.dn.parse_dn(base_dn)
+    except Exception:
+        return ""
+    return ".".join(value for attr, value, _ in parts if attr.lower() == "dc")
+
+
 def ldap_settings():
     """The LDAP columns of the Snipe-IT settings table, or {"enabled": False}.
 
@@ -177,7 +190,6 @@ def ldap_settings():
     if conn["group"]:
         # LDAP_MATCHING_RULE_IN_CHAIN: members of nested groups count too
         user_filter += "(memberOf:1.2.840.113556.1.4.1941:=%s)" % ldap_filter_escape(group_dn(conn))
-    domain = _env("LDAP_DOMAIN") if conn["source"] == "domain" else ""
     return {
         "enabled": True,
         # Snipe-IT wraps the filter as "(<filter>(<attribute>=<login>))"
@@ -194,5 +206,5 @@ def ldap_settings():
         "last_name_field": "sn",
         "email_field": "mail",
         "is_ad": ad,
-        "ad_domain": domain if ad else "",
+        "ad_domain": dns_domain(conn["base_dn"]) if ad else "",
     }
