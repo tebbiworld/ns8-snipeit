@@ -51,31 +51,30 @@
             "type": "string",
             "maxLength": 100,
             "description": "First Snipe-IT super user, created by the first configuration only",
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "admin_password": {
             "type": "string",
             "maxLength": 200,
-            "description": "Password of the super user: first configuration only, at least 12 characters, not stored by the module",
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "description": "Password of the super user: first configuration only, at least 12 characters, not stored by the module; control characters are refused by 05validate (a schema error would echo the value)"
         },
         "admin_email": {
             "type": "string",
             "maxLength": 254,
             "description": "Mail address of the super user, also the alert address",
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "site_name": {
             "type": "string",
             "maxLength": 100,
             "description": "Name of the installation shown by Snipe-IT (first configuration only)",
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "mail_from": {
             "type": "string",
             "maxLength": 254,
             "description": "Sender address of Snipe-IT mails; empty: snipeit@<host>",
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "ldap_enabled": {
             "type": "boolean",
@@ -91,18 +90,18 @@
         "ldap_domain": {
             "type": "string",
             "maxLength": 253,
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "ldap_group": {
             "type": "string",
             "maxLength": 512,
             "description": "Only members of this group may log in (Active Directory)",
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "ldap_url": {
             "type": "string",
             "maxLength": 512,
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "ldap_start_tls": {
             "type": "boolean"
@@ -120,18 +119,17 @@
         "ldap_base_dn": {
             "type": "string",
             "maxLength": 512,
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "ldap_bind_dn": {
             "type": "string",
             "maxLength": 512,
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "pattern": "^[^\\x00-\\x1f\\x7f]*$"
         },
         "ldap_bind_password": {
             "type": "string",
             "maxLength": 512,
-            "description": "Write only; empty keeps the stored password",
-            "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+            "description": "Write only; empty keeps the stored password"
         },
         "ldap_user_attribute": {
             "type": "string",

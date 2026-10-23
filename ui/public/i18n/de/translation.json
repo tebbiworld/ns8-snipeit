@@ -46,7 +46,11 @@
     "host_format": "Muss ein gültiger vollständiger Domainname sein",
     "control_characters": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
     "ldap_inactive_title": "Verzeichnisanmeldung nicht aktiv",
-    "ldap_inactive": "Snipe-IT konnte die Verzeichnisanmeldung nicht vorbereiten (z. B. existiert die Gruppe nicht oder das Serverzertifikat ist ungültig), daher können sich nur lokale Konten anmelden. Den Grund zeigt das Protokoll des Dienstes snipeit-app."
+    "ldap_inactive": "Snipe-IT konnte die Verzeichnisanmeldung nicht vorbereiten (z. B. existiert die Gruppe nicht oder das Serverzertifikat ist ungültig), daher können sich nur lokale Konten anmelden. Den Grund zeigt das Protokoll des Dienstes snipeit-app.",
+    "admin_user_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "admin_email_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "site_name_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "mail_from_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt"
   },
   "common": {
     "required": "erforderlich",
@@ -130,6 +134,11 @@
     "ldap_bind_password_required": "Erforderlich",
     "ldap_group_requires_ad": "Eine Anmeldegruppe setzt ein Active Directory voraus (memberOf)",
     "ldap_settings_missing": "Verzeichnis-Einstellungen vervollständigen",
-    "control_characters": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt"
+    "control_characters": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "ldap_domain_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "ldap_group_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "ldap_url_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "ldap_base_dn_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "ldap_bind_dn_pattern": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt"
   }
 }
