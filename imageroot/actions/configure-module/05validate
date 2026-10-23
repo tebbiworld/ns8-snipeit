@@ -41,6 +41,9 @@ for key, value in data.items():
         fail(key, "" if "password" in key else value.encode("unicode_escape").decode(), "control_characters")
 
 
+# Required only before the first installation. An installed instance whose
+# super user disappeared (SNIPEIT_SETUP_MISSING) may send admin_* to create a
+# new one; without them 90route refuses to publish it.
 installed = os.environ.get("SNIPEIT_INSTALLED") == "1"
 login = (data.get("admin_user") or "").strip()
 if not installed and not login:

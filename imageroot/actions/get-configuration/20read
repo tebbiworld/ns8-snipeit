@@ -19,7 +19,8 @@ config = {
     "host": os.getenv("TRAEFIK_HOST", ""),
     "lets_encrypt": os.getenv("TRAEFIK_LETS_ENCRYPT") == "True",
     "http2https": os.getenv("TRAEFIK_HTTP2HTTPS", "True") == "True",
-    "installed": os.getenv("SNIPEIT_INSTALLED") == "1",
+    # false also when the super user disappeared: the UI asks for a new one
+    "installed": os.getenv("SNIPEIT_INSTALLED") == "1" and os.getenv("SNIPEIT_SETUP_MISSING") != "1",
     "mail_from": os.getenv("MAIL_FROM", ""),
     "ldap_enabled": os.getenv("LDAP_ENABLED") == "true",
     # Snipe-IT uses the directory login: false while it is on but could not

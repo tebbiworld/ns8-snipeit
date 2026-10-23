@@ -27,21 +27,28 @@ if traefik_id is None:
 
 
 def setup_completed():
-    """Snipe-IT has its super user and settings (the web installer is closed)."""
-    proc = subprocess.run(["podman", "exec", "-i", "-u", "docker", "snipeit-app", "php", HELPER, "status"],
-                          stdin=subprocess.DEVNULL, capture_output=True, text=True)
-    if proc.returncode != 0:
-        print(agent.SD_ERR + "cannot read the Snipe-IT status: " + proc.stderr.strip(), file=sys.stderr)
+    """Snipe-IT has its super user and settings. Any error counts as no."""
+    try:
+        proc = subprocess.run(["podman", "exec", "-i", "-u", "docker", "snipeit-app", "php", HELPER, "status"],
+                              stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120)
+        if proc.returncode != 0:
+            print(agent.SD_ERR + "cannot read the Snipe-IT status: " + proc.stderr.strip(), file=sys.stderr)
+            return False
+        return json.loads(proc.stdout).get("setup_completed") is True
+    except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+        print(agent.SD_ERR + f"cannot read the Snipe-IT status: {exc}", file=sys.stderr)
         return False
-    return json.loads(proc.stdout).get("setup_completed") is True
 
 
-# Fail closed: without a super user the web installer would be public, e.g.
-# after a restore with an empty database. No route then, and an existing one
-# is removed.
+# Fail closed: without a super user Snipe-IT would offer its web installer
+# (denied by Apache as well, container/ns8-deny-setup.conf). No route then,
+# and an existing one is removed.
 if not setup_completed():
-    agent.tasks.run(agent_id=traefik_id, action="delete-route", data={"instance": os.environ["MODULE_ID"]})
-    print(agent.SD_ERR + "Snipe-IT has no super user: the web installer would be public, the route is not published",
+    response = agent.tasks.run(agent_id=traefik_id, action="delete-route", data={"instance": os.environ["MODULE_ID"]})
+    if response["exit_code"] != 0:
+        print(agent.SD_ERR + f"the route could not be removed: {response}", file=sys.stderr)
+    print(agent.SD_ERR + "Snipe-IT has no super user: the route is not published."
+          " Send admin_user, admin_password and admin_email to create one, or restore a backup.",
           file=sys.stderr)
     sys.exit(1)
 

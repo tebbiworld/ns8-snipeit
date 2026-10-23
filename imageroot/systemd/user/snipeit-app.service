@@ -33,6 +33,7 @@ ExecStart=/usr/bin/podman run --conmon-pidfile %t/snipeit-app.pid \
     --volume snipeit-data:/var/lib/snipeit:Z \
     --volume %S/container/supervisord.conf:/supervisord.conf:ro,z \
     --volume %S/container/ns8-snipeit.php:/usr/local/lib/ns8/ns8-snipeit.php:ro,z \
+    --volume %S/container/ns8-deny-setup.conf:/etc/apache2/conf-enabled/zz-ns8-deny-setup.conf:ro,z \
     ${SNIPE_IT_IMAGE}
 # the entrypoint migrates the database before Apache starts
 ExecStartPost=/usr/bin/bash -c "while ! /usr/bin/podman exec snipeit-app curl -sf -o /dev/null http://127.0.0.1/health ; do sleep 3 ; done"

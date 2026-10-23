@@ -7,12 +7,14 @@
 
 # ExecStartPost of snipeit-app.service, also run by configure-module:
 # - create the REST API keys and personal access client once,
-# - record whether the first administrator exists (SNIPEIT_INSTALLED),
+# - record whether the super user exists (SNIPEIT_INSTALLED, and
+#   SNIPEIT_SETUP_MISSING when it disappeared: then the route is removed),
 # - store the directory login in the Snipe-IT settings.
 # The LDAP settings carry the bind password: they go to the container on
 # stdin, never on a command line.
 
 import json
+import os
 import subprocess
 import sys
 
@@ -40,13 +42,42 @@ created = helper("passport")["created"]
 if created:
     print("created for the REST API: " + ", ".join(created), file=sys.stderr)
 
+def set_env_if_changed(name, value):
+    if agent.read_envfile("environment").get(name) != value:
+        agent.set_env(name, value)
+
+
+def unpublish():
+    """Remove the Traefik route of the instance (fail closed)."""
+    import agent.tasks
+    traefik_id = agent.resolve_agent_id("traefik@node")
+    response = agent.tasks.run(agent_id=traefik_id, action="delete-route",
+                               data={"instance": os.environ["MODULE_ID"]})
+    if response["exit_code"] != 0:
+        raise RuntimeError(f"delete-route failed: {response}")
+
+
 status = helper("status")
-installed = "1" if status["setup_completed"] else "0"
-if installed != agent.read_envfile("environment").get("SNIPEIT_INSTALLED"):
-    agent.set_env("SNIPEIT_INSTALLED", installed)
-if installed != "1":
-    # nothing to configure yet: configure-module creates the administrator
+was_installed = agent.read_envfile("environment").get("SNIPEIT_INSTALLED") == "1"
+if not status["setup_completed"]:
+    if not was_installed:
+        # first configuration: 85setup creates the super user
+        sys.exit(0)
+    # Installed before, now without super user or settings (e.g. emptied
+    # database). The web installer is denied by Apache anyway
+    # (container/ns8-deny-setup.conf); remove the route as well. SNIPEIT_INSTALLED
+    # stays 1, SNIPEIT_SETUP_MISSING tells configure-module and the UI that a
+    # new super user (admin_*) or a restore is needed.
+    set_env_if_changed("SNIPEIT_SETUP_MISSING", "1")
+    print(agent.SD_ERR + "Snipe-IT has no super user any more: the route is removed;"
+          " configure a new super user or restore a backup", file=sys.stderr)
+    try:
+        unpublish()
+    except Exception as exc:
+        print(agent.SD_ERR + f"cannot remove the route: {exc}", file=sys.stderr)
     sys.exit(0)
+set_env_if_changed("SNIPEIT_INSTALLED", "1")
+set_env_if_changed("SNIPEIT_SETUP_MISSING", "0")
 
 try:
     ldap = snipeitconfig.ldap_settings()
@@ -55,5 +86,4 @@ except Exception as exc:
     print(agent.SD_WARNING + f"LDAP login disabled, cannot prepare it: {exc}", file=sys.stderr)
     ldap = {"enabled": False}
 active = "true" if helper("ldap", ldap)["ldap_enabled"] else "false"
-if active != agent.read_envfile("environment").get("LDAP_ACTIVE"):
-    agent.set_env("LDAP_ACTIVE", active)
+set_env_if_changed("LDAP_ACTIVE", active)

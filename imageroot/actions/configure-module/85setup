@@ -21,7 +21,8 @@ HELPER = "/usr/local/lib/ns8/ns8-snipeit.php"
 
 data = json.load(sys.stdin)
 login = (data.get("admin_user") or "").strip()
-if os.environ.get("SNIPEIT_INSTALLED") == "1" or not login:
+needs_setup = os.environ.get("SNIPEIT_INSTALLED") != "1" or os.environ.get("SNIPEIT_SETUP_MISSING") == "1"
+if not needs_setup or not login:
     sys.exit(0)
 
 admin = {
