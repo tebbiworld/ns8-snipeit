@@ -1,0 +1,14 @@
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+[Unit]
+Description=Snipe-IT scheduled tasks, every minute
+
+[Timer]
+OnCalendar=minutely
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

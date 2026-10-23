@@ -1,0 +1,17 @@
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# One run of the Laravel scheduler (alerts, reminders, clean-up), started
+# every minute by snipeit-scheduler.timer, as the image does internally.
+
+[Unit]
+Description=Snipe-IT scheduled tasks
+Requisite=snipeit-app.service
+After=snipeit-app.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/podman exec -u docker snipeit-app php /var/www/html/artisan schedule:run --no-ansi --no-interaction
+SyslogIdentifier=%u
