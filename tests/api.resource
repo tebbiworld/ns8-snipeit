@@ -1,6 +1,10 @@
 *** Settings ***
 Library    SSHLibrary
 
+*** Variables ***
+${HOST}           snipeit.ci.test
+${ADMIN_PASS}     CI-Admin#Pass 1234
+
 *** Keywords ***
 # Every remote command has a time limit: a hanging action must fail the case
 # instead of blocking a runner for an hour.

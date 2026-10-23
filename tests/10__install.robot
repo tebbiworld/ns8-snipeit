@@ -3,8 +3,6 @@ Library     SSHLibrary
 Resource    api.resource
 
 *** Variables ***
-${HOST}           snipeit.ci.test
-${ADMIN_PASS}     CI-Admin#Pass 1234
 ${CONFIG}         {"host":"${HOST}","lets_encrypt":false,"http2https":true,"admin_user":"admin","admin_password":"${ADMIN_PASS}","admin_email":"admin@example.org","site_name":"CI"}
 ${CUSTOM_LDAP}    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"ldap_enabled":true,"ldap_source":"custom","ldap_url":"ldaps://ldap.ci.test:636","ldap_tls_verify":true,"ldap_schema":"ad","ldap_base_dn":"DC=ci,DC=test","ldap_bind_dn":"CN=svc,DC=ci,DC=test","ldap_bind_password":"Bind#Pass 34"}
 # Ubuntu package with the PHP2Shell fix (CVE-2026-109618/109619)
@@ -24,7 +22,7 @@ Install the module
 The first configuration needs a super user
     # without one the Snipe-IT web installer would be open to the network
     ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true}    rc_expected=2
-    Should Contain    ${out}    admin_user_required
+    Should Be Equal    ${out[0]['error']}    admin_user_required
 
 Configure the module
     Run task    module/${module_id}/configure-module    ${CONFIG}    decode_json=${FALSE}
@@ -94,5 +92,8 @@ The login page answers
     Should Be Equal As Strings    ${code.strip()}    200
 
 The scheduler has run
-    ${n} =    Run on node    runagent -m ${module_id} bash -c 'journalctl --user -u snipeit-scheduler.service --since -10min -o cat | grep -c "Finished Snipe-IT scheduled tasks" || true'
-    Should Be True    ${n.strip()} >= 1
+    # the last run of the oneshot unit ended, with exit status 0
+    ${out} =    Run on node    runagent -m ${module_id} systemctl --user show snipeit-scheduler.service -p ExecMainExitTimestampMonotonic -p ExecMainStatus --value
+    ${ts}    ${status} =    Evaluate    $out.split()
+    Should Be True    ${ts} > 0
+    Should Be Equal As Strings    ${status}    0
