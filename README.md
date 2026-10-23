@@ -148,11 +148,9 @@ remove-module --no-preserve snipeit1
 
 ## Testing
 
-```bash
-./test-module.sh <NODE_ADDR> ghcr.io/tebbiworld/snipeit:latest
-```
-
-The tests (Robot Framework, `tests/`) also run on QEMU nodes in the CI.
+The tests (Robot Framework, `tests/`) run on throwaway NS8 nodes (QEMU,
+Rocky Linux 9 and Debian 13) in the CI after every branch build
+(`.github/workflows/test-module-qemu.yml`).
 
 ## Documentation
 
