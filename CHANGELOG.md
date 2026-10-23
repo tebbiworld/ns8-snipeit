@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 – 2026-10-23
 
 - First version: Snipe-IT 8.8.3 (PHP package 8.3.6-0ubuntu0.24.04.13 with
   the PHP2Shell fix) and MariaDB 11.4.13, pinned by digest.
