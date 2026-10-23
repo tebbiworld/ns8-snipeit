@@ -133,6 +133,10 @@ function install(array $data): never
         });
     } catch (RuntimeException $e) {
         fail($e->getMessage());
+    } catch (Illuminate\Database\QueryException $e) {
+        // the message carries the SQL bindings (password hash): log the
+        // error code only
+        fail('database error '.$e->getCode().' while creating the administrator');
     }
 
     finish(['created' => true]);

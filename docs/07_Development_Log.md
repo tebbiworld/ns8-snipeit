@@ -2,6 +2,17 @@
 
 Entries are not deleted; corrections are added as new entries.
 
+## 0.1.0 (unreleased) — 2026-10-23, review fixes
+
+Independent review on PR #1 (changes required), fixed one commit per finding:
+B1 backup/restore without database and route before setup, B2 control
+characters in text fields (environment injection), B3 AD domain of the
+fallback bind, B4 group lookup over StartTLS, B5 bind password kept after
+switching the directory login off, B6 negative tests, B7 Renovate. Hints:
+LDAP status in get-configuration and the UI, no SQL bindings in the journal,
+only the MariaDB passwords for the restore container; the other hints are
+documented as limits in the README.
+
 ## 0.1.0 (unreleased) — 2026-10-23
 
 Goal: first version of the module (work packages 1–7 of the implementation

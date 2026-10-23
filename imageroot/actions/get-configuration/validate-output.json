@@ -45,6 +45,10 @@
             "type": "boolean",
             "title": "Login with a user domain or LDAP server"
         },
+        "ldap_active": {
+            "type": "boolean",
+            "description": "Snipe-IT uses the directory login (false while it could not be prepared)"
+        },
         "ldap_source": {
             "type": "string",
             "enum": [

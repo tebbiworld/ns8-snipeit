@@ -54,4 +54,6 @@ except Exception as exc:
     # fail closed: a directory login that cannot be prepared is switched off
     print(agent.SD_WARNING + f"LDAP login disabled, cannot prepare it: {exc}", file=sys.stderr)
     ldap = {"enabled": False}
-helper("ldap", ldap)
+active = "true" if helper("ldap", ldap)["ldap_enabled"] else "false"
+if active != agent.read_envfile("environment").get("LDAP_ACTIVE"):
+    agent.set_env("LDAP_ACTIVE", active)

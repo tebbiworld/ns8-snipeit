@@ -44,7 +44,9 @@
     "domain_already_used_in_traefik": "Diese Domain wird in Traefik bereits verwendet",
     "host_pattern": "Muss ein gültiger vollständiger Domainname sein",
     "host_format": "Muss ein gültiger vollständiger Domainname sein",
-    "control_characters": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt"
+    "control_characters": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt",
+    "ldap_inactive_title": "Verzeichnisanmeldung nicht aktiv",
+    "ldap_inactive": "Snipe-IT konnte die Verzeichnisanmeldung nicht vorbereiten (z. B. existiert die Gruppe nicht oder das Serverzertifikat ist ungültig), daher können sich nur lokale Konten anmelden. Den Grund zeigt das Protokoll des Dienstes snipeit-app."
   },
   "common": {
     "required": "erforderlich",

@@ -39,12 +39,16 @@ trap 'rm -rfv initdb.d/' EXIT
 chmod -R a+rX initdb.d
 
 podman volume rm --force mysql-data
-# the passwords come from the restored state/passwords.env, by file
+# only the MariaDB passwords of the restored state/passwords.env, by file
+# (the container does not need the application key or the bind password)
+umask 077
+grep -E '^MARIADB_(ROOT_)?PASSWORD=' passwords.env > initdb.env
+trap 'rm -rfv initdb.d/ initdb.env' EXIT
 podman run \
     --rm \
     --interactive \
     --network=none \
-    --env-file=passwords.env \
+    --env-file=initdb.env \
     --env MARIADB_DATABASE=snipeit \
     --env MARIADB_USER=snipeit \
     --volume=./initdb.d:/docker-entrypoint-initdb.d:z \

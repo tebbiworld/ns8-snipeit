@@ -133,6 +133,14 @@
               }}</template>
             </cv-toggle>
             <template v-if="ldapEnabled">
+              <NsInlineNotification
+                v-if="ldapSaved && !ldapActive"
+                kind="warning"
+                :title="$t('settings.ldap_inactive_title')"
+                :description="$t('settings.ldap_inactive')"
+                :showCloseButton="false"
+                class="maxwidth"
+              />
               <p class="mg-bottom note">{{ $t("settings.ldap_intro") }}</p>
               <LdapLogin
                 v-model="ldap"
@@ -214,6 +222,8 @@ export default {
       siteName: "",
       mailFrom: "",
       ldapEnabled: false,
+      ldapSaved: false,
+      ldapActive: false,
       ldap: ldapFromConfiguration({}),
       ldapBindPasswordSet: false,
       userDomains: [],
@@ -303,6 +313,8 @@ export default {
       this.installed = config.installed;
       this.mailFrom = config.mail_from || "";
       this.ldapEnabled = config.ldap_enabled;
+      this.ldapSaved = config.ldap_enabled;
+      this.ldapActive = !!config.ldap_active;
       this.userDomains = config.user_domains || [];
       this.ldap = ldapFromConfiguration(config);
       this.ldapBindPasswordSet = !!config.ldap_bind_password_set;

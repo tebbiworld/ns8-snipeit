@@ -140,6 +140,28 @@ migrates the database.
 | `snipeit-scheduler.timer` | `artisan schedule:run`, every minute (replaces the loop of the image) |
 | `snipeit-ldap-sync.timer` | daily directory user import, only with the directory login on |
 
+## Security notes and known limits
+
+- The application key and the database password reach the app container as
+  environment variables (visible to the module user with `podman inspect`),
+  as in other NS8 modules: a deviation from keeping secrets out of the
+  environment, limited to the module user.
+- Between the start of the services and the creation of the super user in
+  the first configuration (seconds), the Snipe-IT installer answers on the
+  node loopback port of the instance; it is not routed through Traefik.
+  Local processes connecting to that port are treated as the trusted proxy
+  and may set `X-Forwarded-For`.
+- The route is published only while Snipe-IT reports a completed setup; a
+  backup fails when the database of a configured instance cannot be dumped,
+  and a restore without a dump of an installed instance is refused.
+- `clone-module` keeps the host name: a copy (not a move) needs a new host
+  name before both are used.
+- An LDAP server of its own is checked against the system CA certificates of
+  the container; a private CA cannot be added yet (switch the check off only
+  in a trusted network).
+- The task input of `configure-module` (super user and bind password) is kept
+  in the NS8 task history like for every module.
+
 ## Uninstall
 
 ```bash
