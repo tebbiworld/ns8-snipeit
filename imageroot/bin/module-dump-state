@@ -13,15 +13,16 @@ set -e
 # the dump holds password hashes and sessions: private to the module user
 umask 077
 
-# Never configured: no database to save
-if ! systemctl --user -q is-enabled snipeit.service; then
+# Not installed yet (no super user ever created): no data to save.
+# Read the state file: it is the module setting, whatever the caller exported.
+if ! grep -qx 'SNIPEIT_INSTALLED=1' environment; then
     exit 0
 fi
-# A configured instance whose database is not running cannot be saved: fail
-# the backup instead of storing one without the database (a restore of such
-# a backup would start Snipe-IT with an empty database)
+# An installed instance whose database is not running (stopped, disabled)
+# cannot be saved: fail the backup instead of reporting success for one
+# without the database
 if ! systemctl --user -q is-active snipeit-mariadb.service; then
-    echo "module-dump-state: snipeit-mariadb.service is not running, the database cannot be saved" >&2
+    echo "module-dump-state: snipeit-mariadb.service is not running, the database of the installed instance cannot be saved" >&2
     exit 1
 fi
 
