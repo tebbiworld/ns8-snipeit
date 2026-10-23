@@ -25,9 +25,13 @@ permissions:
   contents: write
 
 env:
-  UPSTREAM_IMAGES: "docker.io/snipe/snipe-it"
-  TAG_REGEX: '^v(?P<ver>\d+\.\d+\.\d+)$'
-  UPSTREAM_NAME: "Snipe-IT"
+  # Checked independently: Snipe-IT, MariaDB on the 11.4 LTS line, and the
+  # Node.js image that builds the UI (24 LTS line). The first set is the one
+  # whose PHP is checked below.
+  UPSTREAM_SETS: >-
+    [{"name": "Snipe-IT", "images": ["docker.io/snipe/snipe-it"], "tag_regex": "^v(?P<ver>\\d+\\.\\d+\\.\\d+)$"},
+     {"name": "MariaDB", "images": ["docker.io/library/mariadb"], "tag_regex": "^(?P<ver>11\\.4\\.\\d+)$"},
+     {"name": "Node.js", "images": ["docker.io/library/node"], "tag_regex": "^(?P<ver>24\\.\\d+\\.\\d+)-slim$"}]
   PIN_FILES: "build-images.sh"
   MIN_DAYS: "42"
   MODULE: "snipeit"
@@ -55,7 +59,7 @@ jobs:
         id: php
         run: |
           set -e
-          image="${UPSTREAM_IMAGES%% *}:${{ steps.upstream.outputs.newest }}"
+          image="${{ steps.upstream.outputs.first_ref }}"
           ver=$(docker run --rm --entrypoint dpkg-query "$image" -W -f '${Version}' "$PHP_PACKAGE")
           echo "version=$ver" >> "$GITHUB_OUTPUT"
           if ! docker run --rm --entrypoint dpkg "$image" --compare-versions "$ver" ge "$PHP_MIN_VERSION"; then
@@ -89,14 +93,15 @@ jobs:
         id: bump
         run: |
           set -e
-          cur="${{ steps.upstream.outputs.current }}"; new="${{ steps.upstream.outputs.newest }}"
+          summary="${{ steps.upstream.outputs.summary }}"
           bash .upstream_bump.sh && rm -f .upstream_bump.sh
           last="${{ steps.interval.outputs.last_tag }}"; last="${last:-1.0.0}"
           IFS=. read -r a b c <<< "$last"; ver="$a.$b.$((c+1))"
-          python3 - "$ver" "$(date +%F)" "$cur" "$new" "$UPSTREAM_NAME" <<'PY'
+          python3 - "$ver" "$(date +%F)" "$summary" <<'PY'
           import sys
-          ver, today, cur, new, name = sys.argv[1:]
-          entry = f"## {ver} — {today}\n\n- {name} {cur} → {new} (automatic upstream update), PHP package ${{ steps.php.outputs.version }}.\n\n"
+          ver, today, summary = sys.argv[1:]
+          lines = "".join(f"- {part} (automatic upstream update).\n" for part in summary.split(", "))
+          entry = f"## {ver} — {today}\n\n{lines}- PHP package of Snipe-IT: ${{ steps.php.outputs.version }}.\n\n"
           try:
               s = open("CHANGELOG.md").read()
           except FileNotFoundError:
@@ -111,7 +116,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "$ver: ${UPSTREAM_NAME} ${cur} -> ${new}"
+          git commit -m "$ver: ${summary}"
           git tag "$ver"
           git push origin HEAD:main "$ver"
           echo "version=$ver" >> "$GITHUB_OUTPUT"
@@ -140,7 +145,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ steps.bump.outputs.version }}" --title "${{ steps.bump.outputs.version }}" \
-            --notes "${UPSTREAM_NAME} ${{ steps.upstream.outputs.current }} → ${{ steps.upstream.outputs.newest }} (automatic upstream update). Update through the NS8 Software Center."
+            --notes "${{ steps.upstream.outputs.summary }} (automatic upstream update). Update through the NS8 Software Center."
 
       - name: Ask the catalog to regenerate
         if: steps.decide.outputs.go == 'true'

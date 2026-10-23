@@ -130,9 +130,12 @@ in the **package** version `8.3.6-0ubuntu0.24.04.13` (see
 runagent -m snipeit1 podman exec snipeit-app dpkg-query -W php8.3-common libapache2-mod-php8.3
 ```
 
-`.github/workflows/auto-release.yml` checks every week for a new Snipe-IT
-release, refuses one whose PHP package is older than the fixed one, pins tag
-and digest, and releases a new module version after at least 42 days. On
+`.github/workflows/auto-release.yml` checks every week for new releases of
+Snipe-IT, of MariaDB on the 11.4 LTS line and of the Node.js 24 image that
+builds the UI. It refuses a Snipe-IT image whose PHP package is older than
+the fixed one, pins tag and digest, and releases a new module version after
+at least 42 days. `renovate.json` describes the same pins for Renovate, if it
+is enabled for the repository. On
 `update-module` the app container starts on the new image and its entrypoint
 migrates the database.
 
