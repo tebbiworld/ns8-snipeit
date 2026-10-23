@@ -33,7 +33,7 @@ if any(key.startswith("ldap_") and key != "ldap_enabled" for key in data):
 else:
     # a request without directory fields (e.g. only the host) keeps them
     ldapsettings.bind_domain(ldap_enabled)
-if not ldap_enabled:
+if not ldap_enabled and modsecrets.get(ldapsettings.PASSWORD_KEY):
     # no directory login, no stored credentials (they would stay in the
     # backup): enabling it again asks for the bind password
     modsecrets.write({ldapsettings.PASSWORD_KEY: ""})
