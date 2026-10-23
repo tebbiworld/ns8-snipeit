@@ -56,7 +56,8 @@
     "site_name_helper": "Shown in the Snipe-IT header. Default: Snipe-IT",
     "mail_from": "Sender address of mails (optional)",
     "mail_from_helper": "Mails go through the cluster smarthost. Without one, Snipe-IT writes them to its log.",
-    "mail_from_invalid": "Enter a valid email address"
+    "mail_from_invalid": "Enter a valid email address",
+    "control_characters": "Line breaks and control characters are not allowed"
   },
   "about": {
     "title": "About"
@@ -126,6 +127,7 @@
     "ldap_bind_dn_required": "Required",
     "ldap_bind_password_required": "Required",
     "ldap_group_requires_ad": "A login group needs an Active Directory (memberOf)",
-    "ldap_settings_missing": "Complete the directory settings"
+    "ldap_settings_missing": "Complete the directory settings",
+    "control_characters": "Line breaks and control characters are not allowed"
   }
 }

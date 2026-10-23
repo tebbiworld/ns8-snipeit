@@ -3,11 +3,22 @@
     "title": "list-ldap-groups input",
     "$id": "http://schema.nethserver.org/snipeit/list-ldap-groups-input.json",
     "description": "Groups of a cluster user domain",
-    "examples": [{"domain": "ad.example.org"}],
+    "examples": [
+        {
+            "domain": "ad.example.org"
+        }
+    ],
     "type": "object",
-    "required": ["domain"],
+    "required": [
+        "domain"
+    ],
     "additionalProperties": false,
     "properties": {
-        "domain": {"type": "string", "minLength": 1, "maxLength": 253, "pattern": "^[A-Za-z0-9.-]+$"}
+        "domain": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 253,
+            "pattern": "^[A-Za-z0-9.-]+$"
+        }
     }
 }

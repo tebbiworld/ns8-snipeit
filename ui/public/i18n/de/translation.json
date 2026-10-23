@@ -43,7 +43,8 @@
     "configuring": "Wird konfiguriert",
     "domain_already_used_in_traefik": "Diese Domain wird in Traefik bereits verwendet",
     "host_pattern": "Muss ein gültiger vollständiger Domainname sein",
-    "host_format": "Muss ein gültiger vollständiger Domainname sein"
+    "host_format": "Muss ein gültiger vollständiger Domainname sein",
+    "control_characters": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt"
   },
   "common": {
     "required": "erforderlich",
@@ -126,6 +127,7 @@
     "ldap_bind_dn_required": "Erforderlich",
     "ldap_bind_password_required": "Erforderlich",
     "ldap_group_requires_ad": "Eine Anmeldegruppe setzt ein Active Directory voraus (memberOf)",
-    "ldap_settings_missing": "Verzeichnis-Einstellungen vervollständigen"
+    "ldap_settings_missing": "Verzeichnis-Einstellungen vervollständigen",
+    "control_characters": "Zeilenumbrüche und Steuerzeichen sind nicht erlaubt"
   }
 }

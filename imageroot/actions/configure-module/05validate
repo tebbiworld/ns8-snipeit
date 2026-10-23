@@ -23,6 +23,7 @@ agent.set_weight(os.path.basename(__file__), 0)
 USERNAME = re.compile(r"[A-Za-z0-9_.@-]{2,100}")
 EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 MIN_PASSWORD_LENGTH = 12
+CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
 
 data = json.load(sys.stdin)
 errors = []
@@ -30,6 +31,14 @@ errors = []
 
 def fail(field, value, error):
     errors.append({"field": field, "parameter": field, "value": value, "error": error})
+
+
+# Second line of defence behind the schema patterns: a line break in a value
+# stored with agent.set_env() or in passwords.env would add a variable of
+# its own (e.g. a different container image)
+for key, value in data.items():
+    if isinstance(value, str) and CONTROL_CHARACTERS.search(value):
+        fail(key, "" if "password" in key else value.encode("unicode_escape").decode(), "control_characters")
 
 
 installed = os.environ.get("SNIPEIT_INSTALLED") == "1"
