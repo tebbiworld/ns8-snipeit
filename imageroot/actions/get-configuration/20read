@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Return the settings configure-module accepts. The application key, the
+# database passwords and the LDAP bind password are kept in
+# state/passwords.env and never returned.
+
+import json
+import os
+import sys
+
+import ldapsettings
+
+config = {
+    "host": os.getenv("TRAEFIK_HOST", ""),
+    "lets_encrypt": os.getenv("TRAEFIK_LETS_ENCRYPT") == "True",
+    "http2https": os.getenv("TRAEFIK_HTTP2HTTPS", "True") == "True",
+    "installed": os.getenv("SNIPEIT_INSTALLED") == "1",
+    "mail_from": os.getenv("MAIL_FROM", ""),
+    "ldap_enabled": os.getenv("LDAP_ENABLED") == "true",
+}
+config.update(ldapsettings.configuration())
+json.dump(config, fp=sys.stdout)

@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# ExecStartPost of snipeit-app.service, also run by configure-module:
+# - create the REST API keys and personal access client once,
+# - record whether the first administrator exists (SNIPEIT_INSTALLED),
+# - store the directory login in the Snipe-IT settings.
+# The LDAP settings carry the bind password: they go to the container on
+# stdin, never on a command line.
+
+import json
+import subprocess
+import sys
+
+import agent
+import snipeitconfig
+
+HELPER = "/usr/local/lib/ns8/ns8-snipeit.php"
+
+
+def run_in_app(*args, stdin=None):
+    """Run a command in the app container as the web server user."""
+    proc = subprocess.run(["podman", "exec", "-i", "-u", "docker", "snipeit-app", *args],
+                          input=stdin, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(f"{' '.join(args[:3])} failed: {proc.stderr.strip()}")
+    return proc.stdout
+
+
+def helper(command, data=None):
+    return json.loads(run_in_app("php", HELPER, command, stdin=json.dumps(data) if data is not None else ""))
+
+
+# REST API: OAuth keys and personal access client, created once
+created = helper("passport")["created"]
+if created:
+    print("created for the REST API: " + ", ".join(created), file=sys.stderr)
+
+status = helper("status")
+installed = "1" if status["setup_completed"] else "0"
+if installed != agent.read_envfile("environment").get("SNIPEIT_INSTALLED"):
+    agent.set_env("SNIPEIT_INSTALLED", installed)
+if installed != "1":
+    # nothing to configure yet: configure-module creates the administrator
+    sys.exit(0)
+
+try:
+    ldap = snipeitconfig.ldap_settings()
+except Exception as exc:
+    # fail closed: a directory login that cannot be prepared is switched off
+    print(agent.SD_WARNING + f"LDAP login disabled, cannot prepare it: {exc}", file=sys.stderr)
+    ldap = {"enabled": False}
+helper("ldap", ldap)

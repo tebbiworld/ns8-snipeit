@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Checks that need the module state: the first super user and the directory
+# login settings. Without a super user the web installer of Snipe-IT would be
+# open to whoever reaches the host name first, so the first configuration
+# must create one.
+
+import json
+import os
+import re
+import sys
+
+import agent
+import ldapsettings
+
+agent.set_weight(os.path.basename(__file__), 0)
+
+USERNAME = re.compile(r"[A-Za-z0-9_.@-]{2,100}")
+EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+MIN_PASSWORD_LENGTH = 12
+
+data = json.load(sys.stdin)
+errors = []
+
+
+def fail(field, value, error):
+    errors.append({"field": field, "parameter": field, "value": value, "error": error})
+
+
+installed = os.environ.get("SNIPEIT_INSTALLED") == "1"
+login = (data.get("admin_user") or "").strip()
+if not installed and not login:
+    fail("admin_user", "", "admin_user_required")
+if login:
+    if not USERNAME.fullmatch(login):
+        fail("admin_user", login, "admin_user_invalid")
+    if len(data.get("admin_password") or "") < MIN_PASSWORD_LENGTH:
+        fail("admin_password", "", "admin_password_too_short")
+    if not EMAIL.fullmatch((data.get("admin_email") or "").strip()):
+        fail("admin_email", data.get("admin_email", ""), "admin_email_invalid")
+mail_from = (data.get("mail_from") or "").strip()
+if mail_from and not EMAIL.fullmatch(mail_from):
+    fail("mail_from", mail_from, "mail_from_invalid")
+
+ldap_enabled = data.get("ldap_enabled", os.environ.get("LDAP_ENABLED") == "true")
+# a request without directory fields (e.g. only the host) keeps the stored ones
+ldap_fields = any(key.startswith("ldap_") and key != "ldap_enabled" for key in data)
+for field, error in ldapsettings.validate(data, active=ldap_enabled and ldap_fields):
+    fail(field, data.get(field, "") if field != "ldap_bind_password" else "", error)
+if ldap_enabled and not ldap_fields and not ldapsettings.complete():
+    fail("ldap_enabled", True, "ldap_settings_missing")
+
+# The group restriction relies on the memberOf attribute of Active Directory
+if ldap_enabled and ldap_fields and (data.get("ldap_group") or "").strip():
+    schema = data.get("ldap_schema") or "ad"
+    if (data.get("ldap_source") or "domain") == "domain" and data.get("ldap_domain"):
+        try:
+            from agent.ldapproxy import Ldapproxy
+            schema = (Ldapproxy().get_domain(data["ldap_domain"]) or {}).get("schema", "ad")
+        except Exception as exc:
+            print(agent.SD_WARNING + f"cannot read the user domain {data['ldap_domain']}: {exc}", file=sys.stderr)
+    if schema != "ad":
+        fail("ldap_group", data["ldap_group"], "ldap_group_requires_ad")
+
+if errors:
+    agent.set_status("validation-failed")
+    json.dump(errors, fp=sys.stdout)
+    sys.exit(2)

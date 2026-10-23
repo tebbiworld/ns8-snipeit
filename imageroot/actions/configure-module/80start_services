@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# (Re)start the pod with the new settings; snipeit-sync (ExecStartPost of the
+# app) stores the directory login in Snipe-IT. The containers are named
+# explicitly: systemctl waits only for the jobs of the units it is given, and
+# 85setup needs the app up (its ExecStartPost waits for the web server).
+
+set -e
+exec 1>&2
+
+systemctl --user enable snipeit.service snipeit-scheduler.timer snipeit-ldap-sync.timer
+systemctl --user restart snipeit.service snipeit-mariadb.service snipeit-app.service
+systemctl --user start snipeit-scheduler.timer snipeit-ldap-sync.timer
