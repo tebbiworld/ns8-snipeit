@@ -31,8 +31,9 @@ Snipe-IT is installed and the installer is closed
     Wait Until Keyword Succeeds    60 times    5 seconds    The login page answers
     ${cfg} =    Run task    module/${module_id}/get-configuration    {}
     Should Be True    ${cfg['installed']}
-    ${out} =    Run on node    curl -sSk -o /dev/null -w '\%{http_code} \%{redirect_url}' -H 'Host: ${HOST}' https://127.0.0.1/setup
-    Should Be Equal As Strings    ${out.strip()}    302 https://${HOST}/
+    # 302 to the dashboard (release before the Apache rule), 403 since then
+    ${code} =    Run on node    curl -sSk -o /dev/null -w '\%{http_code}' -H 'Host: ${HOST}' https://127.0.0.1/setup
+    Should Be True    '${code.strip()}' in ('302', '403')
 
 The super user can log in
     Super user login works
@@ -57,6 +58,13 @@ Line breaks in text fields are rejected
     Should Be Equal    ${out[0]['value']}    ${EMPTY}
     ${leaks} =    Run on node    runagent -m ${module_id} bash -c 'grep -c -e "^SNIPE_IT_IMAGE=evil" -e "^APP_KEY=x" "$AGENT_STATE_DIR/environment" "$AGENT_STATE_DIR/passwords.env" | grep -vc ":0$" || true'
     Should Be Equal As Integers    ${leaks.strip()}    0
+
+The web installer is denied
+    # N1: Apache refuses /setup in any spelling, independent of the database
+    FOR    ${path}    IN    /setup    /SETUP/user    //setup/migrate    /index.php/setup
+        ${code} =    Run on node    curl -sSk -o /dev/null -w '\%{http_code}' -H 'Host: ${HOST}' 'https://127.0.0.1${path}'
+        Should Be Equal As Strings    ${code.strip()}    403    ${path}
+    END
 
 PHP carries the PHP2Shell fix
     # Ubuntu backports the fix without changing PHP_VERSION (8.3.6): compare
@@ -115,6 +123,15 @@ A backup without database fails
     Should Not Be Equal As Integers    ${rc}    0
     ${dump} =    Run on node    runagent -m ${module_id} bash -c 'ls "$AGENT_STATE_DIR"/snipeit.sql* 2>/dev/null | wc -l'
     Should Be Equal As Integers    ${dump.strip()}    0
+
+A backup of a disabled installed instance fails
+    # N2: the dump depends on SNIPEIT_INSTALLED, not on the enabled service
+    Run on node    runagent -m ${module_id} systemctl --user disable --now snipeit.service
+    ${out}    ${rc} =    Execute Command    runagent -m ${module_id} bash -c 'cd "$AGENT_STATE_DIR" && module-dump-state'    return_rc=True    timeout=5 min
+    Run on node    runagent -m ${module_id} systemctl --user enable snipeit.service
+    Run on node    runagent -m ${module_id} systemctl --user start snipeit.service snipeit-mariadb.service snipeit-app.service
+    Should Not Be Equal As Integers    ${rc}    0
+    Wait Until Keyword Succeeds    30 times    5 seconds    The login page answers
 
 A restore without dump of an installed instance is refused
     # B1: run the restore step alone, as for a backup without snipeit.sql
