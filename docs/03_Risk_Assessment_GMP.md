@@ -1,6 +1,6 @@
 # Risk assessment and GMP fitness — ns8-snipeit
 
-Version 0.1, 2026-10-23. Draft for review and approval by the quality unit of
+Version 0.2, 2026-10-28 (time zone, backup check). Draft for review and approval by the quality unit of
 a user; **not** a statement that the system is validated or compliant.
 Binding frame: EU/PIC/S GMP Annex 11 (2011). Placeholders: ❰…❱.
 
@@ -32,9 +32,9 @@ Evidence: T = own test on a NS8 test node 2026-10-23, S = source code of
 | Data integrity / ALCOA+ (4, 5) | Attributable (user per change), contemporaneous (server time UTC/node zone), original in the database, enduring through backup. Electronic signatures: acceptance signatures on check-out exist but are not Part 11 / Annex 11 §14 e-signatures. | T (attribution); signatures not evidenced | do not use as e-signature for GMP decisions |
 | Accuracy checks (6) | Field validation by Snipe-IT; no plausibility checks for calibration values; custom fields can carry formats. | not evidenced | define custom fields with formats; manual review |
 | Calibration/maintenance management | Maintenances per asset (type, start/end, cost, notes), audit due dates, expected check-in; no calibration plans with tolerances, measurement results, out-of-tolerance handling or locking of overdue equipment. | not evidenced (manual) | keep calibration certificates and OOT handling in the QMS; Snipe-IT as register |
-| Backup and restore (7.2) | Daily NS8 backup with database dump and files; restore tested into a new instance (users, assets, directory login, API token). | T | test restore periodically |
+| Backup and restore (7.2) | Daily NS8 backup with database dump and files; restore tested into a new instance (users, assets, directory login, API token). Since 1.1.0 a backup of an installed instance whose database has no users or settings fails, so an emptied database does not push good snapshots out of the retention. | T | test restore periodically; monitor failed backups |
 | Change and configuration management (10) | Module and Snipe-IT versions pinned; weekly upstream check, release after 42 days; updates applied through the NS8 cluster update. | R | change control before updating a GMP instance (release notes, regression test) |
-| Time (9) | Container time = node time (NTP of the node). Users cannot change it. | not evidenced | qualify NTP of the node |
+| Time (9) | Container time = node time (NTP of the node). Users cannot change it. Display zone set by the cluster administrator (`timezone`); a change converts all stored date-time values in one transaction (audit trail keeps the real moment); times inside log texts (old/new values) keep their old zone. | T (CI: conversion there and back) | qualify NTP of the node; change the zone only under change control, with a backup before |
 | Archiving, retention (17) | Data stays in the database; exports CSV/PDF reports. No retention locking. | not evidenced | define retention in SOP |
 | Supplier (3) | Open source by Grokability, Inc., public issue tracker, security advisories on GitHub; module maintained by its author without service contract. | not evidenced | assess project health; no SLA |
 

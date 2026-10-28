@@ -2,6 +2,32 @@
 
 Entries are not deleted; corrections are added as new entries.
 
+## 1.1.0 (unreleased) — 2026-10-28
+
+Goal: issue #3 (time zone) and the two open hints of 1.0.0 (work package 8).
+
+- Issue #3 (Mohannad33): the time zone came from the node at installation
+  and could not be changed. New optional `timezone`, validated against
+  `/usr/share/zoneinfo`.
+- Decision (maintainer, 2026-10-28): convert the stored times on a change
+  instead of only warning. Reason: Laravel stores wall clock of
+  `APP_TIMEZONE` without a connection time zone (`config/database.php`
+  8.8.3), so old entries, the activity log among them, would show a wrong
+  moment. Rejected: warning only (falsifies the audit trail display),
+  change only before installation (does not solve the issue).
+- Decision (maintainer, 2026-10-28): first name attribute selectable
+  (`login` default, `givenname`). Snipe-IT maps one attribute per field
+  without fallback and refuses users without first name in the import
+  (`Ldap::applyLdapAttributesToUser`, `User::$rules`, `LdapSync` 8.8.3); a
+  per-user fallback would need a patch of Snipe-IT. Rejected: always
+  `givenName` (NS8 users have none), documentation only.
+- Backup: `module-dump-state` refuses an installed instance whose database
+  has no users or settings (same test as `Setting::setupCompleted()`).
+- CI: `update_from: update-baseline` removed; the update test starts from
+  the newest release (1.0.0).
+
+Tests: ❰CI run and dev test of 1.1.0 pending❱.
+
 ## 0.1.0 (unreleased) — 2026-10-23, review fixes
 
 Independent review on PR #1 (changes required), fixed one commit per finding:

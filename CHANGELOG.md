@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0 – unreleased
+
+- Time zone setting (issue #3): choose the zone of Snipe-IT in the module
+  settings; a change converts the stored date-time values of an installed
+  instance.
+- First name of directory users from the login name (default) or from
+  `givenName`.
+- A backup of an installed instance with an emptied database fails instead
+  of replacing good snapshots.
+- CI: the update test starts from the newest release.
+
 ## 1.0.0 – 2026-10-23
 
 - First version: Snipe-IT 8.8.3 (PHP package 8.3.6-0ubuntu0.24.04.13 with
