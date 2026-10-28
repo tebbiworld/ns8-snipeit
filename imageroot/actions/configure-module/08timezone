@@ -102,8 +102,8 @@ def conversion_sql():
 print(f"converting the stored times from {old_zone} to {new_zone}", file=sys.stderr)
 running = [unit for unit in APP_UNITS
            if subprocess.run(["systemctl", "--user", "-q", "is-active", unit]).returncode == 0]
-systemctl("stop", *APP_UNITS)
 try:
+    systemctl("stop", *APP_UNITS)
     # the pod and the database may be stopped (e.g. disabled instance)
     systemctl("start", "snipeit-mariadb.service")
     # CONVERT_TZ returns NULL for a zone missing in the MariaDB time zone
