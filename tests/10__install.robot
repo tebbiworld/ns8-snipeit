@@ -88,27 +88,32 @@ Secrets are stored in passwords.env only
 An unknown time zone is rejected
     ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Mars/Olympus_Mons"}    rc_expected=2
     Should Be Equal    ${out[0]['error']}    timezone_unknown
+    # a legacy name of the node that PHP in the image refuses
+    ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"US/Eastern","timezone_change_confirmed":true}    rc_expected=2
+    Should Be Equal    ${out[0]['error']}    timezone_unknown
     # the name goes into SQL literals: the schema refuses anything else
     ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"UTC\\u0027; DROP TABLE users; --"}    rc_expected=10
     Should Be Equal    ${out[0]['error']}    timezone_pattern
 
-A time zone change converts the stored times
-    # issue #3. Pacific/Kiritimati is UTC+14 without daylight saving time
+A time zone change needs a confirmation and converts nothing
+    # issue #3. Snipe-IT stores times as wall clock of its zone and does not
+    # convert them: after the installation a change must be confirmed
     ${cfg} =    Run task    module/${module_id}/get-configuration    {}
     ${old_zone} =    Set Variable    ${cfg['timezone']}
+    Should Be True    ${cfg['stored_times']}
     Should Contain    ${cfg['timezones']}    Pacific/Kiritimati
+    Should Not Contain    ${cfg['timezones']}    US/Eastern
     ${before} =    Created time of the super user
-    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Pacific/Kiritimati"}    decode_json=${FALSE}
+    ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Pacific/Kiritimati"}    rc_expected=2
+    Should Be Equal    ${out[0]['error']}    timezone_change_unconfirmed
+    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Pacific/Kiritimati","timezone_change_confirmed":true}    decode_json=${FALSE}
     ${after} =    Created time of the super user
-    ${expected} =    Run on node    python3 -c 'import sys; from datetime import datetime; from zoneinfo import ZoneInfo as Z; print(datetime.fromisoformat(sys.argv[1]).replace(tzinfo=Z(sys.argv[2])).astimezone(Z(sys.argv[3])).strftime("\%Y-\%m-\%d \%H:\%M:\%S"))' '${before}' '${old_zone}' Pacific/Kiritimati
-    Should Be Equal As Strings    ${after}    ${expected.strip()}
-    ${app_zone} =    Run on node    runagent -m ${module_id} podman exec snipeit-app printenv APP_TIMEZONE
-    Should Be Equal As Strings    ${app_zone.strip()}    Pacific/Kiritimati
+    Should Be Equal As Strings    ${after}    ${before}
+    # PHP in the image accepts the zone (a refused one would leave Snipe-IT in UTC)
+    ${php} =    Run on node    runagent -m ${module_id} podman exec snipeit-app php -r 'var_export(date_default_timezone_set(getenv("APP_TIMEZONE"))); echo " ", getenv("APP_TIMEZONE");'
+    Should Be Equal As Strings    ${php.strip()}    true Pacific/Kiritimati
     Wait Until Keyword Succeeds    30 times    5 seconds    Super user login works
-    # and back: the original wall clock returns
-    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"${old_zone}"}    decode_json=${FALSE}
-    ${back} =    Created time of the super user
-    Should Be Equal As Strings    ${back}    ${before}
+    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"${old_zone}","timezone_change_confirmed":true}    decode_json=${FALSE}
     Wait Until Keyword Succeeds    30 times    5 seconds    The login page answers
 
 Directory users get the login name as first name by default

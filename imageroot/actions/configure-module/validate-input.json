@@ -81,8 +81,12 @@
         "timezone": {
             "type": "string",
             "maxLength": 64,
-            "description": "IANA time zone of Snipe-IT, like 'Europe/Zurich' (a name under /usr/share/zoneinfo of the node). A change converts the stored times of an installed instance",
+            "description": "IANA time zone of Snipe-IT, like 'Europe/Zurich', from the list of get-configuration. Snipe-IT does not convert stored times: after the installation a change needs timezone_change_confirmed",
             "pattern": "^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$"
+        },
+        "timezone_change_confirmed": {
+            "type": "boolean",
+            "description": "Confirms a time zone change on an installed instance: stored times are not converted and show shifted by the difference of the zones"
         },
         "first_name_attribute": {
             "type": "string",

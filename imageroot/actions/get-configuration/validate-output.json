@@ -49,10 +49,14 @@
         },
         "timezones": {
             "type": "array",
-            "description": "Time zones the node offers",
+            "description": "Time zones Snipe-IT accepts (etc/timezones)",
             "items": {
                 "type": "string"
             }
+        },
+        "stored_times": {
+            "type": "boolean",
+            "description": "Snipe-IT holds data: a time zone change shifts the stored times and needs timezone_change_confirmed"
         },
         "first_name_attribute": {
             "type": "string",

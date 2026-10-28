@@ -62,10 +62,18 @@ if login:
 mail_from = (data.get("mail_from") or "").strip()
 if mail_from and not MAIL_ADDRESS.fullmatch(mail_from):
     fail("mail_from", mail_from, "mail_from_invalid")
-# the schema pattern allows any name-like value; Snipe-IT and MariaDB need
-# one the node knows
-if "timezone" in data and not timezones.is_valid(data["timezone"]):
-    fail("timezone", data["timezone"], "timezone_unknown")
+# Snipe-IT stores date-time values as wall clock of its time zone and does
+# not convert them. Before the installation there are none: any zone of the
+# list. Afterwards a change shifts every stored time by the difference of the
+# zones, so it needs timezone_change_confirmed. The current zone is kept even
+# if it is no longer in the list (instances of 1.0).
+current_zone = os.environ.get("SNIPEIT_TIMEZONE") or timezones.DEFAULT
+new_zone = data.get("timezone", current_zone)
+if new_zone != current_zone:
+    if not timezones.is_valid(new_zone):
+        fail("timezone", new_zone, "timezone_unknown")
+    elif os.environ.get("SNIPEIT_INSTALLED") == "1" and data.get("timezone_change_confirmed") is not True:
+        fail("timezone", new_zone, "timezone_change_unconfirmed")
 
 ldap_enabled = data.get("ldap_enabled", os.environ.get("LDAP_ENABLED") == "true")
 # a request without directory fields (e.g. only the host) keeps the stored ones

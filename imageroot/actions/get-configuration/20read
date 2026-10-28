@@ -25,6 +25,8 @@ config = {
     "mail_from": os.getenv("MAIL_FROM", ""),
     "timezone": os.getenv("SNIPEIT_TIMEZONE") or timezones.DEFAULT,
     "timezones": timezones.available(),
+    # times are stored: a time zone change needs timezone_change_confirmed
+    "stored_times": os.getenv("SNIPEIT_INSTALLED") == "1",
     # instances of 1.0 have no LDAP_FIRST_NAME: they use the login name
     "first_name_attribute": os.getenv("LDAP_FIRST_NAME") or "login",
     "ldap_enabled": os.getenv("LDAP_ENABLED") == "true",

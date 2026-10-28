@@ -10,12 +10,16 @@
 from pathlib import Path
 
 import agent
+import timezones
 
-# The node time zone is the default time zone of Snipe-IT
+# The node time zone is the default time zone of Snipe-IT, if Snipe-IT knows
+# it (a legacy name like US/Eastern is not in its list)
 try:
     timezone = str(Path("/etc/localtime").resolve().relative_to(Path("/usr/share/zoneinfo")))
 except ValueError:
-    timezone = "UTC"
+    timezone = timezones.DEFAULT
+if not timezones.is_valid(timezone):
+    timezone = timezones.DEFAULT
 
 agent.set_env("SNIPEIT_TIMEZONE", timezone)
 agent.set_env("SNIPEIT_INSTALLED", "0")
