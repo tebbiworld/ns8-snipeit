@@ -116,6 +116,41 @@
               :disabled="loading.getConfiguration || loading.configureModule"
               ref="mail_from"
             />
+            <NsComboBox
+              :title="$t('settings.timezone')"
+              :label="$t('settings.timezone_placeholder')"
+              v-model="timezone"
+              :options="timezoneOptions"
+              auto-filter
+              auto-highlight
+              :helper-text="$t('settings.timezone_helper')"
+              :invalid-message="$t(error.timezone)"
+              :disabled="loading.getConfiguration || loading.configureModule"
+              class="mg-bottom maxwidth"
+              ref="timezone"
+            />
+            <template v-if="timezoneChanged">
+              <NsInlineNotification
+                kind="warning"
+                :title="$t('settings.timezone_change_title')"
+                :description="
+                  $t('settings.timezone_change', {
+                    from: savedTimezone,
+                    to: timezone,
+                  })
+                "
+                :showCloseButton="false"
+                class="maxwidth"
+              />
+              <NsCheckbox
+                v-model="timezoneChangeConfirmed"
+                value="timezoneChangeConfirmed"
+                :label="$t('settings.timezone_change_confirm')"
+                :disabled="loading.configureModule"
+                class="mg-bottom"
+                ref="timezone_change_confirmed"
+              />
+            </template>
             <!-- login with a user domain or LDAP server -->
             <h4 class="mg-bottom">{{ $t("settings.login_title") }}</h4>
             <cv-toggle
@@ -151,6 +186,35 @@
                 ref="ldap"
                 class="maxwidth mg-bottom"
               />
+              <cv-radio-group
+                :legend="$t('settings.first_name_attribute')"
+                vertical
+                class="mg-bottom"
+              >
+                <cv-radio-button
+                  name="first_name_attribute"
+                  value="login"
+                  :checked="firstNameAttribute === 'login'"
+                  :label="$t('settings.first_name_login')"
+                  :disabled="
+                    loading.getConfiguration || loading.configureModule
+                  "
+                  @change="firstNameAttribute = 'login'"
+                />
+                <cv-radio-button
+                  name="first_name_attribute"
+                  value="givenname"
+                  :checked="firstNameAttribute === 'givenname'"
+                  :label="$t('settings.first_name_givenname')"
+                  :disabled="
+                    loading.getConfiguration || loading.configureModule
+                  "
+                  @change="firstNameAttribute = 'givenname'"
+                />
+              </cv-radio-group>
+              <p class="mg-bottom note">
+                {{ $t("settings.first_name_attribute_helper") }}
+              </p>
             </template>
             <cv-row v-if="error.configureModule">
               <cv-column>
@@ -221,6 +285,12 @@ export default {
       adminEmail: "",
       siteName: "",
       mailFrom: "",
+      timezone: "",
+      savedTimezone: "",
+      timezones: [],
+      storedTimes: false,
+      timezoneChangeConfirmed: false,
+      firstNameAttribute: "login",
       ldapEnabled: false,
       ldapSaved: false,
       ldapActive: false,
@@ -243,11 +313,30 @@ export default {
         admin_email: "",
         site_name: "",
         mail_from: "",
+        timezone: "",
       },
     };
   },
   computed: {
     ...mapState(["instanceName", "core", "appName"]),
+    timezoneOptions() {
+      // the saved zone stays selectable even if Snipe-IT's list lost it
+      const zones = this.timezones.includes(this.savedTimezone)
+        ? this.timezones
+        : [this.savedTimezone, ...this.timezones];
+      return zones
+        .filter((tz) => tz)
+        .map((tz) => ({ name: tz, label: tz, value: tz }));
+    },
+    timezoneChanged() {
+      // Snipe-IT does not convert stored times: a change needs a confirmation
+      return (
+        this.storedTimes &&
+        !!this.timezone &&
+        !!this.savedTimezone &&
+        this.timezone !== this.savedTimezone
+      );
+    },
   },
   created() {
     this.getConfiguration();
@@ -312,6 +401,12 @@ export default {
       this.isHttpToHttpsEnabled = config.http2https;
       this.installed = config.installed;
       this.mailFrom = config.mail_from || "";
+      this.timezones = config.timezones || [];
+      this.timezone = config.timezone || "";
+      this.savedTimezone = this.timezone;
+      this.storedTimes = !!config.stored_times;
+      this.timezoneChangeConfirmed = false;
+      this.firstNameAttribute = config.first_name_attribute || "login";
       this.ldapEnabled = config.ldap_enabled;
       this.ldapSaved = config.ldap_enabled;
       this.ldapActive = !!config.ldap_active;
@@ -351,6 +446,14 @@ export default {
       }
       if (this.mailFrom && !EMAIL.test(this.mailFrom)) {
         fail("mail_from", "settings.mail_from_invalid");
+      }
+      if (
+        this.timezone !== this.savedTimezone &&
+        !this.timezones.includes(this.timezone)
+      ) {
+        fail("timezone", "settings.timezone_unknown");
+      } else if (this.timezoneChanged && !this.timezoneChangeConfirmed) {
+        fail("timezone", "settings.timezone_change_unconfirmed");
       }
       if (this.ldapEnabled) {
         const ldapErrors = validateLdap(this.ldap, this.ldapBindPasswordSet);
@@ -448,6 +551,9 @@ export default {
         lets_encrypt: this.isLetsEncryptEnabled,
         http2https: this.isHttpToHttpsEnabled,
         mail_from: this.mailFrom,
+        timezone: this.timezone,
+        timezone_change_confirmed: this.timezoneChangeConfirmed,
+        first_name_attribute: this.firstNameAttribute,
         ldap_enabled: this.ldapEnabled,
       };
       if (!this.installed) {

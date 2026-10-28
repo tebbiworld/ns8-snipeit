@@ -42,5 +42,6 @@ KEEP = [
     "LDAP_BASE_DN",
     "LDAP_BIND_DN",
     "LDAP_USER_ATTRIBUTE",
+    "LDAP_FIRST_NAME",
 ]
 agent.mset_env({key: original_environment[key] for key in KEEP if key in original_environment})

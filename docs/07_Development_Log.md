@@ -2,6 +2,60 @@
 
 Entries are not deleted; corrections are added as new entries.
 
+## 1.1.0 (unreleased) — 2026-10-28, review fixes
+
+Independent review on PR #4 (comment 6463049226, changes required):
+- R2/R3 (the conversion moved calendar days kept as midnight to the
+  neighbouring day; `CONVERT_TZ` leaves values outside 1970–2038 unchanged)
+  correct the earlier decision. Decision (maintainer, 2026-10-28): no
+  conversion. The zone is free before the installation; afterwards a
+  change needs `timezone_change_confirmed` and shifts the stored times
+  (warning in the UI, documented). `08timezone` removed. Rejected:
+  conversion of a reviewed list of moment columns (Snipe-IT does not mark
+  which columns are moments; more risk and tests than the rare change is
+  worth).
+- R1: the zone list is `etc/timezones`, made from the Snipe-IT image by
+  `tools/gen-timezones.sh` (496 zones PHP accepts), not the node list with
+  legacy names. The default from the node falls back to UTC if Snipe-IT does
+  not know the node zone. The current zone of an instance stays accepted.
+- R4: documentation and UI text of `givenname` corrected (no first login
+  and empty first name at the next login for users without `givenName`).
+- Hints: H1–H3, H6–H8 obsolete without conversion; H4 `NsComboBox`, the
+  saved zone stays selectable; H5 the backup test checks the error message;
+  H9 open (manual UI check).
+
+## 1.1.0 (unreleased) — 2026-10-28
+
+Goal: issue #3 (time zone) and the two open hints of 1.0.0 (work package 8).
+
+- Issue #3 (Mohannad33): the time zone came from the node at installation
+  and could not be changed. New optional `timezone`, validated against
+  `/usr/share/zoneinfo`.
+- Decision (maintainer, 2026-10-28): convert the stored times on a change
+  instead of only warning. Reason: Laravel stores wall clock of
+  `APP_TIMEZONE` without a connection time zone (`config/database.php`
+  8.8.3), so old entries, the activity log among them, would show a wrong
+  moment. Rejected: warning only (falsifies the audit trail display),
+  change only before installation (does not solve the issue).
+- Decision (maintainer, 2026-10-28): first name attribute selectable
+  (`login` default, `givenname`). Snipe-IT maps one attribute per field
+  without fallback and refuses users without first name in the import
+  (`Ldap::applyLdapAttributesToUser`, `User::$rules`, `LdapSync` 8.8.3); a
+  per-user fallback would need a patch of Snipe-IT. Rejected: always
+  `givenName` (NS8 users have none), documentation only.
+- Backup: `module-dump-state` refuses an installed instance whose database
+  has no users or settings (same test as `Setting::setupCompleted()`).
+- CI: `update_from: update-baseline` removed; the update test starts from
+  the newest release (1.0.0).
+
+Tests: QEMU CI run 40644348967 (8fee06a) green: install and update from
+1.0.0 on Rocky 9 and Debian 13, including the new cases (unknown and
+SQL-like time zone refused, conversion to Pacific/Kiritimati and back,
+first name default and givenName, backup of the emptied database refused).
+The MariaDB image has its time zone tables loaded (probe passed).
+ghcr version update-baseline deleted after the green run (maintainer OK).
+Manual UI check of the Settings page: ❰pending❱.
+
 ## 0.1.0 (unreleased) — 2026-10-23, review fixes
 
 Independent review on PR #1 (changes required), fixed one commit per finding:

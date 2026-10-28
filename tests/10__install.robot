@@ -4,7 +4,7 @@ Resource    api.resource
 
 *** Variables ***
 ${CONFIG}         {"host":"${HOST}","lets_encrypt":false,"http2https":true,"admin_user":"admin","admin_password":"${ADMIN_PASS}","admin_email":"admin@example.org","site_name":"CI"}
-${CUSTOM_LDAP}    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"ldap_enabled":true,"ldap_source":"custom","ldap_url":"ldaps://ldap.ci.test:636","ldap_tls_verify":true,"ldap_schema":"ad","ldap_base_dn":"DC=ci,DC=test","ldap_bind_dn":"CN=svc,DC=ci,DC=test","ldap_bind_password":"Bind#Pass 34"}
+${CUSTOM_LDAP}    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"ldap_enabled":true,"ldap_source":"custom","ldap_url":"ldaps://ldap.ci.test:636","ldap_tls_verify":true,"ldap_schema":"ad","ldap_base_dn":"DC=ci,DC=test","ldap_bind_dn":"CN=svc,DC=ci,DC=test","ldap_bind_password":"Bind#Pass 34","first_name_attribute":"givenname"}
 # Ubuntu package with the PHP2Shell fix (CVE-2026-109618/109619)
 ${PHP_FIXED}      8.3.6-0ubuntu0.24.04.13
 
@@ -85,6 +85,42 @@ Secrets are stored in passwords.env only
     ${mode} =    Run on node    runagent -m ${module_id} bash -c 'stat -c \%a "$AGENT_STATE_DIR/snipeit.env"'
     Should Be Equal As Strings    ${mode.strip()}    600
 
+An unknown time zone is rejected
+    ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Mars/Olympus_Mons"}    rc_expected=2
+    Should Be Equal    ${out[0]['error']}    timezone_unknown
+    # a legacy name of the node that PHP in the image refuses
+    ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"US/Eastern","timezone_change_confirmed":true}    rc_expected=2
+    Should Be Equal    ${out[0]['error']}    timezone_unknown
+    # the name goes into SQL literals: the schema refuses anything else
+    ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"UTC\\u0027; DROP TABLE users; --"}    rc_expected=10
+    Should Be Equal    ${out[0]['error']}    timezone_pattern
+
+A time zone change needs a confirmation and converts nothing
+    # issue #3. Snipe-IT stores times as wall clock of its zone and does not
+    # convert them: after the installation a change must be confirmed
+    ${cfg} =    Run task    module/${module_id}/get-configuration    {}
+    ${old_zone} =    Set Variable    ${cfg['timezone']}
+    Should Be True    ${cfg['stored_times']}
+    Should Contain    ${cfg['timezones']}    Pacific/Kiritimati
+    Should Not Contain    ${cfg['timezones']}    US/Eastern
+    ${before} =    Created time of the super user
+    ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Pacific/Kiritimati"}    rc_expected=2
+    Should Be Equal    ${out[0]['error']}    timezone_change_unconfirmed
+    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Pacific/Kiritimati","timezone_change_confirmed":true}    decode_json=${FALSE}
+    ${after} =    Created time of the super user
+    Should Be Equal As Strings    ${after}    ${before}
+    # PHP in the image accepts the zone (a refused one would leave Snipe-IT in UTC)
+    ${php} =    Run on node    runagent -m ${module_id} podman exec snipeit-app php -r 'var_export(date_default_timezone_set(getenv("APP_TIMEZONE"))); echo " ", getenv("APP_TIMEZONE");'
+    Should Be Equal As Strings    ${php.strip()}    true Pacific/Kiritimati
+    Wait Until Keyword Succeeds    30 times    5 seconds    Super user login works
+    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"${old_zone}","timezone_change_confirmed":true}    decode_json=${FALSE}
+    Wait Until Keyword Succeeds    30 times    5 seconds    The login page answers
+
+Directory users get the login name as first name by default
+    # instances of 1.0 have no LDAP_FIRST_NAME either
+    ${cfg} =    Run task    module/${module_id}/get-configuration    {}
+    Should Be Equal    ${cfg['first_name_attribute']}    login
+
 Groups of an unknown user domain are an empty list
     ${out} =    Run task    module/${module_id}/list-ldap-groups    {"domain":"no-such-domain.ci.test"}
     Should Be Equal As Integers    ${{ len($out['groups']) }}    0
@@ -96,6 +132,9 @@ A custom LDAP server keeps its bind password out of the environment
     Should Be Equal    ${cfg['ldap_source']}    custom
     Should Be True    ${cfg['ldap_bind_password_set']}
     Should Be True    'ldap_bind_password' not in $cfg
+    Should Be Equal    ${cfg['first_name_attribute']}    givenname
+    ${fname} =    Snipe-IT setting    ldap_fname_field
+    Should Be Equal As Strings    ${fname}    givenname
     Secrets are kept out of the module environment    ${module_id}
     ${leaks} =    Run on node    runagent -m ${module_id} bash -c 'grep -c "Bind#Pass 34" "$AGENT_STATE_DIR/environment" || true'
     Should Be Equal As Integers    ${leaks.strip()}    0
@@ -106,8 +145,8 @@ A custom LDAP server keeps its bind password out of the environment
 Back to the local login
     Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"ldap_enabled":false}    decode_json=${FALSE}
     Wait Until Keyword Succeeds    30 times    5 seconds    The login page answers
-    ${ldap} =    Run on node    runagent -m ${module_id} bash -c 'podman exec snipeit-mariadb sh -c "MYSQL_PWD=\\"\\$MARIADB_PASSWORD\\" mariadb -N -u snipeit snipeit -e \\"select ldap_enabled, ldap_pword is null from settings\\""'
-    Should Be Equal As Strings    ${ldap.strip()}    0\t1
+    ${ldap} =    Snipe-IT setting    ldap_enabled, ldap_pword is null
+    Should Be Equal As Strings    ${ldap}    0\t1
     # B5: no bind password left in passwords.env (and in the backup)
     ${set} =    Run on node    runagent -m ${module_id} bash -c 'grep -c "^LDAP_BIND_PASSWORD=." "$AGENT_STATE_DIR/passwords.env" || true'
     Should Be Equal As Integers    ${set.strip()}    0
@@ -142,6 +181,16 @@ A restore without dump of an installed instance is refused
     Wait Until Keyword Succeeds    30 times    5 seconds    The login page answers
 
 *** Keywords ***
+Snipe-IT setting
+    [Documentation]    Columns of the settings row, tab separated.
+    [Arguments]    ${columns}
+    ${out} =    Run on node    runagent -m ${module_id} bash -c 'podman exec snipeit-mariadb sh -c "MYSQL_PWD=\\"\\$MARIADB_PASSWORD\\" mariadb -N -u snipeit snipeit -e \\"select ${columns} from settings\\""'
+    RETURN    ${out.strip()}
+
+Created time of the super user
+    ${out} =    Run on node    runagent -m ${module_id} bash -c 'podman exec snipeit-mariadb sh -c "MYSQL_PWD=\\"\\$MARIADB_PASSWORD\\" mariadb -N -u snipeit snipeit -e \\"select created_at from users where id = 1\\""'
+    RETURN    ${out.strip()}
+
 The login page answers
     ${code} =    Run on node    curl -sSk -o /dev/null -w '\%{http_code}' -H 'Host: ${HOST}' https://127.0.0.1/login
     Should Be Equal As Strings    ${code.strip()}    200

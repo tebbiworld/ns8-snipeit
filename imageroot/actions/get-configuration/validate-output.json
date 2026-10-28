@@ -10,7 +10,9 @@
             "lets_encrypt": true,
             "installed": true,
             "mail_from": "",
-            "ldap_enabled": false
+            "ldap_enabled": false,
+            "timezone": "Europe/Zurich",
+            "first_name_attribute": "login"
         }
     ],
     "type": "object",
@@ -40,6 +42,28 @@
         },
         "mail_from": {
             "type": "string"
+        },
+        "timezone": {
+            "type": "string",
+            "description": "IANA time zone of Snipe-IT"
+        },
+        "timezones": {
+            "type": "array",
+            "description": "Time zones Snipe-IT accepts (etc/timezones)",
+            "items": {
+                "type": "string"
+            }
+        },
+        "stored_times": {
+            "type": "boolean",
+            "description": "Snipe-IT holds data: a time zone change shifts the stored times and needs timezone_change_confirmed"
+        },
+        "first_name_attribute": {
+            "type": "string",
+            "enum": [
+                "login",
+                "givenname"
+            ]
         },
         "ldap_enabled": {
             "type": "boolean",

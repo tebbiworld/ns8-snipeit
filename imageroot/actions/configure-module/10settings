@@ -25,6 +25,11 @@ agent.set_env("TRAEFIK_LETS_ENCRYPT", data["lets_encrypt"])
 agent.set_env("TRAEFIK_HTTP2HTTPS", data["http2https"])
 if "mail_from" in data:
     agent.set_env("MAIL_FROM", (data["mail_from"] or "").strip())
+if data.get("timezone"):
+    # checked by 05validate; Snipe-IT gets it at the restart (80start_services)
+    agent.set_env("SNIPEIT_TIMEZONE", data["timezone"])
+if "first_name_attribute" in data:
+    agent.set_env("LDAP_FIRST_NAME", data["first_name_attribute"])
 
 ldap_enabled = data.get("ldap_enabled", os.environ.get("LDAP_ENABLED") == "true")
 agent.set_env("LDAP_ENABLED", "true" if ldap_enabled else "false")

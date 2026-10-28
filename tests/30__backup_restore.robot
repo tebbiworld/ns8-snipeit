@@ -54,6 +54,13 @@ Without a super user no route is published
     ${code} =    Run on node    curl -sSk -o /dev/null -w '\%{http_code}' -H 'Host: ${HOST}' https://127.0.0.1/setup
     Should Be Equal As Strings    ${code.strip()}    404
 
+A backup of the emptied database fails
+    # an empty dump would rotate the good snapshots out of the retention
+    ${out}    ${err}    ${rc} =    Execute Command    runagent -m ${restored_id} bash -c 'cd "$AGENT_STATE_DIR" && module-dump-state'    return_stderr=True    return_rc=True    timeout=5 min
+    Should Not Be Equal As Integers    ${rc}    0
+    # refused for the emptied database, not for some other failure
+    Should Contain    ${err}    no users or no settings
+
 A new super user publishes it again
     Run task    module/${restored_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"admin_user":"admin","admin_password":"${ADMIN_PASS}","admin_email":"admin@example.org"}    decode_json=${FALSE}
     ${cfg} =    Run task    module/${restored_id}/get-configuration    {}

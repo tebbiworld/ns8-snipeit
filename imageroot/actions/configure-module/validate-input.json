@@ -21,7 +21,9 @@
             "ldap_enabled": true,
             "ldap_source": "domain",
             "ldap_domain": "ad.example.org",
-            "ldap_group": "snipeit-users"
+            "ldap_group": "snipeit-users",
+            "timezone": "Europe/Zurich",
+            "first_name_attribute": "givenname"
         }
     ],
     "type": "object",
@@ -75,6 +77,24 @@
             "maxLength": 254,
             "description": "Sender address of Snipe-IT mails; empty: snipeit@<host>",
             "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
+        },
+        "timezone": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "IANA time zone of Snipe-IT, like 'Europe/Zurich', from the list of get-configuration. Snipe-IT does not convert stored times: after the installation a change needs timezone_change_confirmed",
+            "pattern": "^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$"
+        },
+        "timezone_change_confirmed": {
+            "type": "boolean",
+            "description": "Confirms a time zone change on an installed instance: stored times are not converted and show shifted by the difference of the zones"
+        },
+        "first_name_attribute": {
+            "type": "string",
+            "description": "Directory attribute for the first name of a user: the login name (always present) or givenName",
+            "enum": [
+                "login",
+                "givenname"
+            ]
         },
         "ldap_enabled": {
             "type": "boolean",
