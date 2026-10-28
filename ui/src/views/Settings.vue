@@ -116,6 +116,32 @@
               :disabled="loading.getConfiguration || loading.configureModule"
               ref="mail_from"
             />
+            <cv-combo-box
+              :title="$t('settings.timezone')"
+              :label="$t('settings.timezone_placeholder')"
+              v-model="timezone"
+              :options="timezoneOptions"
+              auto-filter
+              auto-highlight
+              :helper-text="$t('settings.timezone_helper')"
+              :invalid-message="$t(error.timezone)"
+              :disabled="loading.getConfiguration || loading.configureModule"
+              class="mg-bottom maxwidth"
+              ref="timezone"
+            />
+            <NsInlineNotification
+              v-if="timezoneChanged"
+              kind="warning"
+              :title="$t('settings.timezone_change_title')"
+              :description="
+                $t('settings.timezone_change', {
+                  from: savedTimezone,
+                  to: timezone,
+                })
+              "
+              :showCloseButton="false"
+              class="maxwidth"
+            />
             <!-- login with a user domain or LDAP server -->
             <h4 class="mg-bottom">{{ $t("settings.login_title") }}</h4>
             <cv-toggle
@@ -246,6 +272,9 @@ export default {
       adminEmail: "",
       siteName: "",
       mailFrom: "",
+      timezone: "",
+      savedTimezone: "",
+      timezones: [],
       firstNameAttribute: "login",
       ldapEnabled: false,
       ldapSaved: false,
@@ -269,11 +298,24 @@ export default {
         admin_email: "",
         site_name: "",
         mail_from: "",
+        timezone: "",
       },
     };
   },
   computed: {
     ...mapState(["instanceName", "core", "appName"]),
+    timezoneOptions() {
+      return this.timezones.map((tz) => ({ name: tz, label: tz, value: tz }));
+    },
+    timezoneChanged() {
+      // an installed instance converts its stored times (08timezone)
+      return (
+        this.installed &&
+        !!this.timezone &&
+        !!this.savedTimezone &&
+        this.timezone !== this.savedTimezone
+      );
+    },
   },
   created() {
     this.getConfiguration();
@@ -338,6 +380,9 @@ export default {
       this.isHttpToHttpsEnabled = config.http2https;
       this.installed = config.installed;
       this.mailFrom = config.mail_from || "";
+      this.timezones = config.timezones || [];
+      this.timezone = config.timezone || "";
+      this.savedTimezone = this.timezone;
       this.firstNameAttribute = config.first_name_attribute || "login";
       this.ldapEnabled = config.ldap_enabled;
       this.ldapSaved = config.ldap_enabled;
@@ -378,6 +423,9 @@ export default {
       }
       if (this.mailFrom && !EMAIL.test(this.mailFrom)) {
         fail("mail_from", "settings.mail_from_invalid");
+      }
+      if (!this.timezones.includes(this.timezone)) {
+        fail("timezone", "settings.timezone_unknown");
       }
       if (this.ldapEnabled) {
         const ldapErrors = validateLdap(this.ldap, this.ldapBindPasswordSet);
@@ -475,6 +523,7 @@ export default {
         lets_encrypt: this.isLetsEncryptEnabled,
         http2https: this.isHttpToHttpsEnabled,
         mail_from: this.mailFrom,
+        timezone: this.timezone,
         first_name_attribute: this.firstNameAttribute,
         ldap_enabled: this.ldapEnabled,
       };

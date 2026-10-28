@@ -22,6 +22,7 @@
             "ldap_source": "domain",
             "ldap_domain": "ad.example.org",
             "ldap_group": "snipeit-users",
+            "timezone": "Europe/Zurich",
             "first_name_attribute": "givenname"
         }
     ],
@@ -76,6 +77,12 @@
             "maxLength": 254,
             "description": "Sender address of Snipe-IT mails; empty: snipeit@<host>",
             "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f\\x{2028}\\x{2029}]*$"
+        },
+        "timezone": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "IANA time zone of Snipe-IT, like 'Europe/Zurich' (a name under /usr/share/zoneinfo of the node). A change converts the stored times of an installed instance",
+            "pattern": "^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$"
         },
         "first_name_attribute": {
             "type": "string",

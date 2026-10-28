@@ -52,6 +52,7 @@ api-cli run module/snipeit1/configure-module --data '{
 | `admin_user`, `admin_password`, `admin_email` | First configuration only: the first super user. The password needs at least 12 characters and is not stored by the module. |
 | `site_name` | First configuration only, optional: name shown by Snipe-IT |
 | `mail_from` | Optional sender address of mails; default `snipeit@<host>` |
+| `timezone` | Optional IANA time zone, e.g. `Europe/Zurich` (default: the node time zone at installation). Must exist under `/usr/share/zoneinfo` of the node. See "Time zone" below |
 | `first_name_attribute` | `login` (default) or `givenname`: directory attribute for the first name, see below |
 | `ldap_enabled` | Login with a user domain or LDAP server |
 | `ldap_*` | Directory settings, see below |
@@ -99,6 +100,18 @@ import skips a user without one. `first_name_attribute` chooses it:
 
 The change applies at the next login or import of a user. Users show up with
 their display name, or with first and last name when it is empty.
+
+### Time zone
+
+Snipe-IT shows and takes times in the zone of `timezone`; it has no setting
+of its own for it. Laravel stores date-time values as wall clock of that
+zone, so a change on an installed instance converts them: `configure-module`
+(step `08timezone`) stops the app, converts every `datetime`/`timestamp`
+column of the database from the old to the new zone with MariaDB
+`CONVERT_TZ` in one transaction, and starts it again. Date columns (purchase
+date, expected check-in) are calendar days and stay. Times inside texts, e.g.
+the old and new values in the activity log, are not converted. If the
+conversion fails, nothing is changed. Back up before changing it.
 
 A directory user is created in Snipe-IT on the first login (or by the daily
 import, `snipeit-ldap-sync.timer`) **without permissions**: a super user
@@ -170,8 +183,10 @@ migrates the database.
   Local processes connecting to that port are treated as the trusted proxy
   and may set `X-Forwarded-For`.
 - The route is published only while Snipe-IT reports a completed setup; a
-  backup fails when the database of a configured instance cannot be dumped,
-  and a restore without a dump of an installed instance is refused.
+  backup fails when the database of a configured instance cannot be dumped
+  or has no users or settings any more (an emptied database would otherwise
+  push good snapshots out of the retention), and a restore without a dump of
+  an installed instance is refused.
 - `clone-module` keeps the host name: a copy (not a move) needs a new host
   name before both are used.
 - An LDAP server of its own is checked against the system CA certificates of

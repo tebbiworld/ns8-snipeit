@@ -14,6 +14,7 @@ import os
 import sys
 
 import ldapsettings
+import timezones
 
 config = {
     "host": os.getenv("TRAEFIK_HOST", ""),
@@ -22,6 +23,8 @@ config = {
     # false also when the super user disappeared: the UI asks for a new one
     "installed": os.getenv("SNIPEIT_INSTALLED") == "1" and os.getenv("SNIPEIT_SETUP_MISSING") != "1",
     "mail_from": os.getenv("MAIL_FROM", ""),
+    "timezone": os.getenv("SNIPEIT_TIMEZONE") or timezones.DEFAULT,
+    "timezones": timezones.available(),
     # instances of 1.0 have no LDAP_FIRST_NAME: they use the login name
     "first_name_attribute": os.getenv("LDAP_FIRST_NAME") or "login",
     "ldap_enabled": os.getenv("LDAP_ENABLED") == "true",

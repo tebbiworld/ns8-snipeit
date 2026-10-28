@@ -11,6 +11,7 @@
             "installed": true,
             "mail_from": "",
             "ldap_enabled": false,
+            "timezone": "Europe/Zurich",
             "first_name_attribute": "login"
         }
     ],
@@ -41,6 +42,17 @@
         },
         "mail_from": {
             "type": "string"
+        },
+        "timezone": {
+            "type": "string",
+            "description": "IANA time zone of Snipe-IT"
+        },
+        "timezones": {
+            "type": "array",
+            "description": "Time zones the node offers",
+            "items": {
+                "type": "string"
+            }
         },
         "first_name_attribute": {
             "type": "string",

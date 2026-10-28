@@ -85,6 +85,32 @@ Secrets are stored in passwords.env only
     ${mode} =    Run on node    runagent -m ${module_id} bash -c 'stat -c \%a "$AGENT_STATE_DIR/snipeit.env"'
     Should Be Equal As Strings    ${mode.strip()}    600
 
+An unknown time zone is rejected
+    ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Mars/Olympus_Mons"}    rc_expected=2
+    Should Be Equal    ${out[0]['error']}    timezone_unknown
+    # the name goes into SQL literals: the schema refuses anything else
+    ${out} =    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"UTC\\u0027; DROP TABLE users; --"}    rc_expected=10
+    Should Be Equal    ${out[0]['error']}    timezone_pattern
+
+A time zone change converts the stored times
+    # issue #3. Pacific/Kiritimati is UTC+14 without daylight saving time
+    ${cfg} =    Run task    module/${module_id}/get-configuration    {}
+    ${old_zone} =    Set Variable    ${cfg['timezone']}
+    Should Contain    ${cfg['timezones']}    Pacific/Kiritimati
+    ${before} =    Created time of the super user
+    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"Pacific/Kiritimati"}    decode_json=${FALSE}
+    ${after} =    Created time of the super user
+    ${expected} =    Run on node    python3 -c 'import sys; from datetime import datetime; from zoneinfo import ZoneInfo as Z; print(datetime.fromisoformat(sys.argv[1]).replace(tzinfo=Z(sys.argv[2])).astimezone(Z(sys.argv[3])).strftime("\%Y-\%m-\%d \%H:\%M:\%S"))' '${before}' '${old_zone}' Pacific/Kiritimati
+    Should Be Equal As Strings    ${after}    ${expected.strip()}
+    ${app_zone} =    Run on node    runagent -m ${module_id} podman exec snipeit-app printenv APP_TIMEZONE
+    Should Be Equal As Strings    ${app_zone.strip()}    Pacific/Kiritimati
+    Wait Until Keyword Succeeds    30 times    5 seconds    Super user login works
+    # and back: the original wall clock returns
+    Run task    module/${module_id}/configure-module    {"host":"${HOST}","lets_encrypt":false,"http2https":true,"timezone":"${old_zone}"}    decode_json=${FALSE}
+    ${back} =    Created time of the super user
+    Should Be Equal As Strings    ${back}    ${before}
+    Wait Until Keyword Succeeds    30 times    5 seconds    The login page answers
+
 Directory users get the login name as first name by default
     # instances of 1.0 have no LDAP_FIRST_NAME either
     ${cfg} =    Run task    module/${module_id}/get-configuration    {}
@@ -154,6 +180,10 @@ Snipe-IT setting
     [Documentation]    Columns of the settings row, tab separated.
     [Arguments]    ${columns}
     ${out} =    Run on node    runagent -m ${module_id} bash -c 'podman exec snipeit-mariadb sh -c "MYSQL_PWD=\\"\\$MARIADB_PASSWORD\\" mariadb -N -u snipeit snipeit -e \\"select ${columns} from settings\\""'
+    RETURN    ${out.strip()}
+
+Created time of the super user
+    ${out} =    Run on node    runagent -m ${module_id} bash -c 'podman exec snipeit-mariadb sh -c "MYSQL_PWD=\\"\\$MARIADB_PASSWORD\\" mariadb -N -u snipeit snipeit -e \\"select created_at from users where id = 1\\""'
     RETURN    ${out.strip()}
 
 The login page answers

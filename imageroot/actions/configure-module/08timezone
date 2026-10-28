@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Store the time zone of Snipe-IT (APP_TIMEZONE). Laravel writes the times
+# as wall clock of the application time zone and MariaDB keeps them as they
+# are: after a change the old entries, the audit trail among them, would
+# show the old wall clock in the new zone. So the date-time columns of an
+# installed instance are converted from the old to the new zone first, in
+# one transaction, while the app is stopped. Date columns (purchase date,
+# expected check-in, ...) are calendar days and stay as they are; dates
+# inside texts (e.g. the old/new values of the action log) are not touched.
+#
+# Runs before 10settings: if the conversion fails, the time zone and the
+# data stay as they were and the action ends here.
+
+import json
+import os
+import re
+import subprocess
+import sys
+
+import agent
+import timezones
+
+# Columns are named in the SQL statements: only plain identifiers
+IDENTIFIER = re.compile(r"[A-Za-z0-9_]+")
+# Nothing may write to the database during the conversion. Units that ran
+# before are started again if it fails; 80start_services starts them after a
+# successful one.
+APP_UNITS = ["snipeit-app.service", "snipeit-scheduler.timer", "snipeit-ldap-sync.timer",
+             "snipeit-scheduler.service", "snipeit-ldap-sync.service"]
+
+data = json.load(sys.stdin)
+old_zone = os.environ.get("SNIPEIT_TIMEZONE") or timezones.DEFAULT
+new_zone = data.get("timezone") or old_zone
+if new_zone == old_zone:
+    sys.exit(0)
+# 05validate checked it; checked again because it goes into SQL literals
+if not timezones.NAME.fullmatch(new_zone) or not timezones.NAME.fullmatch(old_zone):
+    print(agent.SD_ERR + "invalid time zone name", file=sys.stderr)
+    sys.exit(1)
+
+if os.environ.get("SNIPEIT_INSTALLED") != "1":
+    # no data yet: Snipe-IT starts with the new zone
+    agent.set_env("SNIPEIT_TIMEZONE", new_zone)
+    sys.exit(0)
+
+
+def mariadb(sql):
+    """Run SQL as the database user of Snipe-IT, return the output (tab
+    separated, no header). The client stops at the first error; a
+    transaction not committed by then is rolled back."""
+    proc = subprocess.run(
+        ["podman", "exec", "-i", "snipeit-mariadb", "/bin/sh", "-c",
+         'MYSQL_PWD="$MARIADB_PASSWORD" exec mariadb -u "$MARIADB_USER" -N -B "$MARIADB_DATABASE"'],
+        input=sql, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip())
+    return proc.stdout
+
+
+def systemctl(*args):
+    subprocess.run(["systemctl", "--user", *args], check=True)
+
+
+def sql_string(zone):
+    # the name matched timezones.NAME: no quote or backslash to escape
+    return "'" + zone + "'"
+
+
+def conversion_sql():
+    """The UPDATE statements and the number of converted columns. All
+    date-time columns of a table are set in one statement, so no
+    ON UPDATE CURRENT_TIMESTAMP column changes on its own."""
+    rows = mariadb(
+        "SELECT c.TABLE_NAME, c.COLUMN_NAME FROM information_schema.COLUMNS c"
+        " JOIN information_schema.TABLES t USING (TABLE_SCHEMA, TABLE_NAME)"
+        " WHERE c.TABLE_SCHEMA = DATABASE() AND t.TABLE_TYPE = 'BASE TABLE'"
+        " AND c.DATA_TYPE IN ('datetime', 'timestamp')"
+        " ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;\n")
+    columns = {}
+    for line in rows.splitlines():
+        table, column = line.split("\t")
+        if not IDENTIFIER.fullmatch(table) or not IDENTIFIER.fullmatch(column):
+            raise ValueError(f"unexpected column name {table}.{column}")
+        columns.setdefault(table, []).append(column)
+    old, new = sql_string(old_zone), sql_string(new_zone)
+    statements = []
+    for table, names in columns.items():
+        # zero and NULL dates stay: CONVERT_TZ would turn them into NULL
+        assignments = ", ".join(
+            f"`{name}` = IF(`{name}` >= '1000-01-01', CONVERT_TZ(`{name}`, {old}, {new}), `{name}`)"
+            for name in names)
+        statements.append(f"UPDATE `{table}` SET {assignments};")
+    return statements, sum(len(names) for names in columns.values())
+
+
+print(f"converting the stored times from {old_zone} to {new_zone}", file=sys.stderr)
+running = [unit for unit in APP_UNITS
+           if subprocess.run(["systemctl", "--user", "-q", "is-active", unit]).returncode == 0]
+systemctl("stop", *APP_UNITS)
+try:
+    # the pod and the database may be stopped (e.g. disabled instance)
+    systemctl("start", "snipeit-mariadb.service")
+    # CONVERT_TZ returns NULL for a zone missing in the MariaDB time zone
+    # tables: refuse before touching any row
+    probe = mariadb(f"SELECT CONVERT_TZ('2000-01-01 12:00:00', {sql_string(old_zone)}, {sql_string(new_zone)}) IS NOT NULL;\n")
+    if probe.strip() != "1":
+        raise RuntimeError(f"MariaDB does not know the time zone {old_zone} or {new_zone}")
+    statements, count = conversion_sql()
+    mariadb("START TRANSACTION;\n" + "\n".join(statements) + "\nCOMMIT;\n")
+except Exception as exc:
+    print(agent.SD_ERR + f"time zone not changed, the stored times are unchanged: {exc}", file=sys.stderr)
+    if running:
+        subprocess.run(["systemctl", "--user", "start", *running])
+    sys.exit(1)
+
+agent.set_env("SNIPEIT_TIMEZONE", new_zone)
+print(f"converted {count} date-time columns in {len(statements)} tables from {old_zone} to {new_zone}", file=sys.stderr)

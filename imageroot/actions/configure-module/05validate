@@ -5,10 +5,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-# Checks that need the module state: the first super user and the directory
-# login settings. Without a super user the web installer of Snipe-IT would be
-# open to whoever reaches the host name first, so the first configuration
-# must create one.
+# Checks that need the module state or the node: the first super user, the
+# time zone and the directory login settings. Without a super user the web
+# installer of Snipe-IT would be open to whoever reaches the host name first,
+# so the first configuration must create one.
 
 import json
 import os
@@ -17,6 +17,7 @@ import sys
 
 import agent
 import ldapsettings
+import timezones
 
 agent.set_weight(os.path.basename(__file__), 0)
 
@@ -61,6 +62,10 @@ if login:
 mail_from = (data.get("mail_from") or "").strip()
 if mail_from and not MAIL_ADDRESS.fullmatch(mail_from):
     fail("mail_from", mail_from, "mail_from_invalid")
+# the schema pattern allows any name-like value; Snipe-IT and MariaDB need
+# one the node knows
+if "timezone" in data and not timezones.is_valid(data["timezone"]):
+    fail("timezone", data["timezone"], "timezone_unknown")
 
 ldap_enabled = data.get("ldap_enabled", os.environ.get("LDAP_ENABLED") == "true")
 # a request without directory fields (e.g. only the host) keeps the stored ones
