@@ -22,6 +22,8 @@ config = {
     # false also when the super user disappeared: the UI asks for a new one
     "installed": os.getenv("SNIPEIT_INSTALLED") == "1" and os.getenv("SNIPEIT_SETUP_MISSING") != "1",
     "mail_from": os.getenv("MAIL_FROM", ""),
+    # instances of 1.0 have no LDAP_FIRST_NAME: they use the login name
+    "first_name_attribute": os.getenv("LDAP_FIRST_NAME") or "login",
     "ldap_enabled": os.getenv("LDAP_ENABLED") == "true",
     # Snipe-IT uses the directory login: false while it is on but could not
     # be prepared (see the journal of snipeit-app)

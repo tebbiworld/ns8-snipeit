@@ -10,7 +10,8 @@
             "lets_encrypt": true,
             "installed": true,
             "mail_from": "",
-            "ldap_enabled": false
+            "ldap_enabled": false,
+            "first_name_attribute": "login"
         }
     ],
     "type": "object",
@@ -40,6 +41,13 @@
         },
         "mail_from": {
             "type": "string"
+        },
+        "first_name_attribute": {
+            "type": "string",
+            "enum": [
+                "login",
+                "givenname"
+            ]
         },
         "ldap_enabled": {
             "type": "boolean",

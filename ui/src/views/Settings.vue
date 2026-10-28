@@ -151,6 +151,31 @@
                 ref="ldap"
                 class="maxwidth mg-bottom"
               />
+              <cv-radio-group
+                :legend="$t('settings.first_name_attribute')"
+                vertical
+                class="mg-bottom"
+              >
+                <cv-radio-button
+                  name="first_name_attribute"
+                  value="login"
+                  :checked="firstNameAttribute === 'login'"
+                  :label="$t('settings.first_name_login')"
+                  :disabled="loading.getConfiguration || loading.configureModule"
+                  @change="firstNameAttribute = 'login'"
+                />
+                <cv-radio-button
+                  name="first_name_attribute"
+                  value="givenname"
+                  :checked="firstNameAttribute === 'givenname'"
+                  :label="$t('settings.first_name_givenname')"
+                  :disabled="loading.getConfiguration || loading.configureModule"
+                  @change="firstNameAttribute = 'givenname'"
+                />
+              </cv-radio-group>
+              <p class="mg-bottom note">
+                {{ $t("settings.first_name_attribute_helper") }}
+              </p>
             </template>
             <cv-row v-if="error.configureModule">
               <cv-column>
@@ -221,6 +246,7 @@ export default {
       adminEmail: "",
       siteName: "",
       mailFrom: "",
+      firstNameAttribute: "login",
       ldapEnabled: false,
       ldapSaved: false,
       ldapActive: false,
@@ -312,6 +338,7 @@ export default {
       this.isHttpToHttpsEnabled = config.http2https;
       this.installed = config.installed;
       this.mailFrom = config.mail_from || "";
+      this.firstNameAttribute = config.first_name_attribute || "login";
       this.ldapEnabled = config.ldap_enabled;
       this.ldapSaved = config.ldap_enabled;
       this.ldapActive = !!config.ldap_active;
@@ -448,6 +475,7 @@ export default {
         lets_encrypt: this.isLetsEncryptEnabled,
         http2https: this.isHttpToHttpsEnabled,
         mail_from: this.mailFrom,
+        first_name_attribute: this.firstNameAttribute,
         ldap_enabled: this.ldapEnabled,
       };
       if (!this.installed) {

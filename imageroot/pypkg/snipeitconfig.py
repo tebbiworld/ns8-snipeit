@@ -204,11 +204,13 @@ def ldap_settings():
         "filter": "&" + user_filter,
         "username_field": username_field,
         "auth_filter_query": username_field + "=",
-        # Snipe-IT maps one attribute per field and needs a first name. NS8
-        # creates users without givenName and with an optional displayName:
-        # the login attribute is always there. The display name shown by
-        # Snipe-IT is displayName, or first + last name when it is empty.
-        "first_name_field": username_field,
+        # Snipe-IT maps one attribute per field, without fallback, and needs
+        # a first name (the import refuses a user without one). NS8 creates
+        # users without givenName and with an optional displayName: the
+        # login attribute is always there and is the default. givenName
+        # suits directories where every user has it. The display name shown
+        # by Snipe-IT is displayName, or first + last name when it is empty.
+        "first_name_field": "givenname" if _env("LDAP_FIRST_NAME") == "givenname" else username_field,
         "last_name_field": "sn",
         "display_name_field": "displayname",
         "email_field": "mail",

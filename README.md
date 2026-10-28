@@ -52,6 +52,7 @@ api-cli run module/snipeit1/configure-module --data '{
 | `admin_user`, `admin_password`, `admin_email` | First configuration only: the first super user. The password needs at least 12 characters and is not stored by the module. |
 | `site_name` | First configuration only, optional: name shown by Snipe-IT |
 | `mail_from` | Optional sender address of mails; default `snipeit@<host>` |
+| `first_name_attribute` | `login` (default) or `givenname`: directory attribute for the first name, see below |
 | `ldap_enabled` | Login with a user domain or LDAP server |
 | `ldap_*` | Directory settings, see below |
 
@@ -86,10 +87,18 @@ api-cli run module/snipeit1/configure-module --data '{
 ```
 
 Directory attributes: login name `sAMAccountName` (AD) or `uid`, mail
-`mail`, display name `displayName`, last name `sn`. The first name of
-Snipe-IT is the login name: Snipe-IT requires one and maps a single
-attribute per field, and NS8 creates users without `givenName`. Users show
-up with their display name, or with the login name when it is empty.
+`mail`, display name `displayName`, last name `sn`. Snipe-IT maps a single
+attribute per field, without fallback, and needs a first name: its daily
+import skips a user without one. `first_name_attribute` chooses it:
+
+- `login` (default): the login name, present for every user. NS8 creates
+  users without `givenName`.
+- `givenname`: `givenName`, for directories where every user has one; users
+  without it are skipped by the import (listed in the journal of
+  `snipeit-ldap-sync.service`).
+
+The change applies at the next login or import of a user. Users show up with
+their display name, or with first and last name when it is empty.
 
 A directory user is created in Snipe-IT on the first login (or by the daily
 import, `snipeit-ldap-sync.timer`) **without permissions**: a super user
