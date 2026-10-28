@@ -25,6 +25,21 @@ if ! systemctl --user -q is-active snipeit-mariadb.service; then
     echo "module-dump-state: snipeit-mariadb.service is not running, the database of the installed instance cannot be saved" >&2
     exit 1
 fi
+# An installed instance without users or settings (emptied database) has no
+# data worth a snapshot: fail the backup, so the retention keeps the last
+# good snapshots instead of rotating them out for empty ones. Same test as
+# Setting::setupCompleted() of Snipe-IT (users including deleted ones).
+# shellcheck disable=SC2016 # expanded by the container shell
+if ! data=$(podman exec snipeit-mariadb /bin/sh -c 'MYSQL_PWD="$MARIADB_PASSWORD" exec mariadb \
+        -u "$MARIADB_USER" -N -B "$MARIADB_DATABASE" \
+        -e "SELECT (SELECT COUNT(*) FROM users) > 0 AND (SELECT COUNT(*) FROM settings) > 0"'); then
+    echo "module-dump-state: cannot read the users and settings tables" >&2
+    exit 1
+fi
+if [ "${data}" != "1" ]; then
+    echo "module-dump-state: the database has no users or no settings any more (emptied?); refusing to replace good backups with an empty one" >&2
+    exit 1
+fi
 
 # MYSQL_PWD instead of -p: the password stays off the command line
 podman exec snipeit-mariadb /bin/sh -c 'MYSQL_PWD="$MARIADB_PASSWORD" exec mariadb-dump \
