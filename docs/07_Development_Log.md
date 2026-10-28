@@ -26,7 +26,13 @@ Goal: issue #3 (time zone) and the two open hints of 1.0.0 (work package 8).
 - CI: `update_from: update-baseline` removed; the update test starts from
   the newest release (1.0.0).
 
-Tests: ❰CI run and dev test of 1.1.0 pending❱.
+Tests: QEMU CI run 40644348967 (8fee06a) green: install and update from
+1.0.0 on Rocky 9 and Debian 13, including the new cases (unknown and
+SQL-like time zone refused, conversion to Pacific/Kiritimati and back,
+first name default and givenName, backup of the emptied database refused).
+The MariaDB image has its time zone tables loaded (probe passed).
+ghcr version update-baseline deleted after the green run (maintainer OK).
+Manual UI check of the Settings page: ❰pending❱.
 
 ## 0.1.0 (unreleased) — 2026-10-23, review fixes
 
