@@ -10,8 +10,9 @@ This page covers what the NS8 module changes.
   in Snipe-IT.
 - **Session**: you are logged out after two idle hours.
 - **Times** are shown in the time zone the administrator chose for the
-  instance. After a change of the zone, old entries show the same moment in
-  the new zone; times quoted inside change notes keep the old zone.
+  instance. If the administrator changes it later, older entries show
+  shifted by the difference between the zones; the administrator records
+  such a change.
 - **First name** of directory users is the login name, unless the
   administrator chose the given name of the directory.
 - **API**: personal API keys are created under your profile (if your

@@ -52,7 +52,8 @@ api-cli run module/snipeit1/configure-module --data '{
 | `admin_user`, `admin_password`, `admin_email` | First configuration only: the first super user. The password needs at least 12 characters and is not stored by the module. |
 | `site_name` | First configuration only, optional: name shown by Snipe-IT |
 | `mail_from` | Optional sender address of mails; default `snipeit@<host>` |
-| `timezone` | Optional IANA time zone, e.g. `Europe/Zurich` (default: the node time zone at installation). Must exist under `/usr/share/zoneinfo` of the node. See "Time zone" below |
+| `timezone` | Optional IANA time zone, e.g. `Europe/Zurich` (default: the node time zone at installation, UTC if Snipe-IT does not know it). One of the list of `get-configuration`. See "Time zone" below |
+| `timezone_change_confirmed` | `true` to change the time zone of an installed instance, see "Time zone" below |
 | `first_name_attribute` | `login` (default) or `givenname`: directory attribute for the first name, see below |
 | `ldap_enabled` | Login with a user domain or LDAP server |
 | `ldap_*` | Directory settings, see below |
@@ -89,13 +90,16 @@ api-cli run module/snipeit1/configure-module --data '{
 
 Directory attributes: login name `sAMAccountName` (AD) or `uid`, mail
 `mail`, display name `displayName`, last name `sn`. Snipe-IT maps a single
-attribute per field, without fallback, and needs a first name: its daily
-import skips a user without one. `first_name_attribute` chooses it:
+attribute per field, without fallback, and needs a first name.
+`first_name_attribute` chooses it:
 
 - `login` (default): the login name, present for every user. NS8 creates
   users without `givenName`.
-- `givenname`: `givenName`, for directories where every user has one; users
-  without it are skipped by the import (listed in the journal of
+- `givenname`: `givenName`, only for directories where **every** user has
+  one. With Snipe-IT 8.8.3 a user without `givenName` cannot log in for the
+  first time (Snipe-IT refuses to create the account), an existing user
+  without it gets an empty first name at the next login, and the daily
+  import skips such users (listed in the journal of
   `snipeit-ldap-sync.service`).
 
 The change applies at the next login or import of a user. Users show up with
@@ -104,14 +108,21 @@ their display name, or with first and last name when it is empty.
 ### Time zone
 
 Snipe-IT shows and takes times in the zone of `timezone`; it has no setting
-of its own for it. Laravel stores date-time values as wall clock of that
-zone, so a change on an installed instance converts them: `configure-module`
-(step `08timezone`) stops the app, converts every `datetime`/`timestamp`
-column of the database from the old to the new zone with MariaDB
-`CONVERT_TZ` in one transaction, and starts it again. Date columns (purchase
-date, expected check-in) are calendar days and stay. Times inside texts, e.g.
-the old and new values in the activity log, are not converted. If the
-conversion fails, nothing is changed. Back up before changing it.
+of its own for it. The list of zones is `imageroot/etc/timezones`: the zones
+PHP in the Snipe-IT image accepts (`tools/gen-timezones.sh`). Legacy names of
+the node, like `US/Eastern`, are not in it: PHP would refuse them and
+Snipe-IT would run in UTC.
+
+Choose the zone before Snipe-IT is used. Laravel stores date-time values as
+clock time of the zone and the module does **not** convert them: after a
+change every stored time, the activity log among them, shows shifted by the
+difference between the old and the new zone. Converting them safely is not
+possible, as Snipe-IT does not say which columns hold a moment and which a
+calendar day kept as midnight (expected check-in, maintenance and audit
+dates). So on an installed instance `configure-module` refuses a change
+(`timezone_change_unconfirmed`) unless `timezone_change_confirmed` is
+`true`, and the Settings page asks for that confirmation. Back up before and
+record the change.
 
 A directory user is created in Snipe-IT on the first login (or by the daily
 import, `snipeit-ldap-sync.timer`) **without permissions**: a super user

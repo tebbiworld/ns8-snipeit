@@ -3,7 +3,7 @@
 Status: draft derived from the module request (community thread "App request
 – Snipe-IT (IT asset management)") and the maintainer's order; to be
 confirmed by the requester ❰confirmation pending❱.
-Version 0.2, 2026-10-28 (U-13, U-14 added for 1.1.0).
+Version 0.3, 2026-10-28 (U-13, U-14 added for 1.1.0; U-13 reworded after review).
 
 | ID | Requirement | Must/Should |
 | --- | --- | --- |
@@ -19,5 +19,5 @@ Version 0.2, 2026-10-28 (U-13, U-14 added for 1.1.0).
 | U-10 | Scheduled Snipe-IT tasks run and are visible to the administrator. | Should |
 | U-11 | Directory users can be imported before their first login. | Should |
 | U-12 | Assessment of the fitness of Snipe-IT for equipment records in a GMP environment (see 03). | Should |
-| U-13 | The time zone of Snipe-IT can be chosen and changed after the installation without falsifying stored times (issue #3). | Should |
+| U-13 | The time zone of Snipe-IT can be chosen in the module settings (issue #3); a later change must not shift stored times unnoticed. | Should |
 | U-14 | Directory users get a meaningful first name, also when the directory has `givenName`. | Should |

@@ -3,10 +3,10 @@
 ## 1.1.0 – unreleased
 
 - Time zone setting (issue #3): choose the zone of Snipe-IT in the module
-  settings; a change converts the stored date-time values of an installed
-  instance.
+  settings, from the zones Snipe-IT's PHP accepts. Stored times are not
+  converted: on an installed instance a change needs a confirmation.
 - First name of directory users from the login name (default) or from
-  `givenName`.
+  `givenName` (only for directories where every user has one).
 - A backup of an installed instance with an emptied database fails instead
   of replacing good snapshots.
 - CI: the update test starts from the newest release.

@@ -2,6 +2,28 @@
 
 Entries are not deleted; corrections are added as new entries.
 
+## 1.1.0 (unreleased) — 2026-10-28, review fixes
+
+Independent review on PR #4 (comment 6463049226, changes required):
+- R2/R3 (the conversion moved calendar days kept as midnight to the
+  neighbouring day; `CONVERT_TZ` leaves values outside 1970–2038 unchanged)
+  correct the earlier decision. Decision (maintainer, 2026-10-28): no
+  conversion. The zone is free before the installation; afterwards a
+  change needs `timezone_change_confirmed` and shifts the stored times
+  (warning in the UI, documented). `08timezone` removed. Rejected:
+  conversion of a reviewed list of moment columns (Snipe-IT does not mark
+  which columns are moments; more risk and tests than the rare change is
+  worth).
+- R1: the zone list is `etc/timezones`, made from the Snipe-IT image by
+  `tools/gen-timezones.sh` (496 zones PHP accepts), not the node list with
+  legacy names. The default from the node falls back to UTC if Snipe-IT does
+  not know the node zone. The current zone of an instance stays accepted.
+- R4: documentation and UI text of `givenname` corrected (no first login
+  and empty first name at the next login for users without `givenName`).
+- Hints: H1–H3, H6–H8 obsolete without conversion; H4 `NsComboBox`, the
+  saved zone stays selectable; H5 the backup test checks the error message;
+  H9 open (manual UI check).
+
 ## 1.1.0 (unreleased) — 2026-10-28
 
 Goal: issue #3 (time zone) and the two open hints of 1.0.0 (work package 8).
