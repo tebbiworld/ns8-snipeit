@@ -186,11 +186,10 @@
                 ref="ldap"
                 class="maxwidth mg-bottom"
               />
-              <cv-radio-group
-                :legend="$t('settings.first_name_attribute')"
-                vertical
-                class="mg-bottom"
-              >
+              <div class="bx--label">
+                {{ $t("settings.first_name_attribute") }}
+              </div>
+              <cv-radio-group vertical class="mg-bottom">
                 <cv-radio-button
                   name="first_name_attribute"
                   value="login"
@@ -402,8 +401,12 @@ export default {
       this.installed = config.installed;
       this.mailFrom = config.mail_from || "";
       this.timezones = config.timezones || [];
-      this.timezone = config.timezone || "";
-      this.savedTimezone = this.timezone;
+      this.savedTimezone = config.timezone || "";
+      // NsComboBox looks up the label of its value in the options it has
+      // at that moment: assign the value once the new options are rendered
+      this.$nextTick(() => {
+        this.timezone = this.savedTimezone;
+      });
       this.storedTimes = !!config.stored_times;
       this.timezoneChangeConfirmed = false;
       this.firstNameAttribute = config.first_name_attribute || "login";

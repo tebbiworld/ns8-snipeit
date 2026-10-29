@@ -10,7 +10,8 @@
 -->
 <template>
   <div class="ldap-login">
-    <cv-radio-group :legend="$t('ldap_login.source')" vertical class="field">
+    <div class="bx--label">{{ $t("ldap_login.source") }}</div>
+    <cv-radio-group vertical class="field">
       <cv-radio-button
         :name="'ldap_source_' + uid"
         value="domain"
@@ -115,7 +116,8 @@
         :showCloseButton="false"
         class="field"
       />
-      <cv-radio-group :legend="$t('ldap_login.schema')" class="field">
+      <div class="bx--label">{{ $t("ldap_login.schema") }}</div>
+      <cv-radio-group class="field">
         <cv-radio-button
           :name="'ldap_schema_' + uid"
           value="ad"
