@@ -10,6 +10,8 @@
 - A backup of an installed instance with an emptied database fails instead
   of replacing good snapshots.
 - CI: the update test starts from the newest release.
+- Settings page: the saved time zone is shown after loading, and the
+  headings of the directory, schema and first name choices are visible.
 
 ## 1.0.0 – 2026-10-23
 

@@ -2,6 +2,24 @@
 
 Entries are not deleted; corrections are added as new entries.
 
+## 1.1.0 — 2026-10-29, browser check of the Settings page
+
+Manual UI check (headless Chrome over CDP on the dev node, instance
+installed from the `main` image; record in the maintainer's notes):
+installation through the page, time zone list and search, confirmation
+required for a change after the installation (page and server), saving,
+English and German texts, no console errors: passed. Found:
+- B1: the time zone field showed only its placeholder after loading;
+  the value was set in the same tick as the options of NsComboBox.
+  Fixed: the value is set after the options rendered.
+- H1: `cv-radio-group` does not render its legend in this carbon-vue
+  version; the headings of the directory, schema and first name choices
+  were missing (directory and schema since 1.0.0). Fixed with a label.
+- Left for later: the "Choose an option" placeholder of the user domain
+  is not translated; a missing user domain only marks the dropdown red
+  without the "Required" text (both since 1.0.0).
+Re-check of the fixes: ❰pending❱.
+
 ## 1.1.0 (unreleased) — 2026-10-28, review fixes
 
 Independent review on PR #4 (comment 6463049226, changes required):
