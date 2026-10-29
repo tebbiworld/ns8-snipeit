@@ -402,8 +402,12 @@ export default {
       this.installed = config.installed;
       this.mailFrom = config.mail_from || "";
       this.timezones = config.timezones || [];
-      this.timezone = config.timezone || "";
-      this.savedTimezone = this.timezone;
+      this.savedTimezone = config.timezone || "";
+      // NsComboBox looks up the label of its value in the options it has
+      // at that moment: assign the value once the new options are rendered
+      this.$nextTick(() => {
+        this.timezone = this.savedTimezone;
+      });
       this.storedTimes = !!config.stored_times;
       this.timezoneChangeConfirmed = false;
       this.firstNameAttribute = config.first_name_attribute || "login";
