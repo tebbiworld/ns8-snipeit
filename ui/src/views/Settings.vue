@@ -186,11 +186,10 @@
                 ref="ldap"
                 class="maxwidth mg-bottom"
               />
-              <cv-radio-group
-                :legend="$t('settings.first_name_attribute')"
-                vertical
-                class="mg-bottom"
-              >
+              <div class="bx--label">
+                {{ $t("settings.first_name_attribute") }}
+              </div>
+              <cv-radio-group vertical class="mg-bottom">
                 <cv-radio-button
                   name="first_name_attribute"
                   value="login"
