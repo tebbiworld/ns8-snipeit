@@ -18,7 +18,13 @@ English and German texts, no console errors: passed. Found:
 - Left for later: the "Choose an option" placeholder of the user domain
   is not translated; a missing user domain only marks the dropdown red
   without the "Required" text (both since 1.0.0).
-Re-check of the fixes: ❰pending❱.
+Re-check of the fixes (image of this branch, 2026-10-29): the saved time
+zone is shown before and after the installation and after a confirmed
+change; saving without a change asks for no confirmation; the headings
+are visible in English and German; confirmation rule, saving, console
+and texts unchanged: passed. Noted for later: the directory heading has
+more space below it than the others; the headings are not linked to
+their groups for screen readers.
 
 ## 1.1.0 (unreleased) — 2026-10-28, review fixes
 
