@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 – unreleased
+## 1.1.0 – 2026-10-29
 
 - Time zone setting (issue #3): choose the zone of Snipe-IT in the module
   settings, from the zones Snipe-IT's PHP accepts. Stored times are not
